@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: cbs_mvp_db
+    environment:
+      POSTGRES_DB: cbs_mvp
+      POSTGRES_USER: cbs
+      POSTGRES_PASSWORD: cbs
+      TZ: Asia/Tokyo
+    ports:
+      - "5432:5432"
+    volumes:
+      - cbs_mvp_pgdata:/var/lib/postgresql/data
+
+volumes:
+  cbs_mvp_pgdata:

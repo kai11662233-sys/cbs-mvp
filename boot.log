@@ -1,0 +1,74 @@
+Picked up JAVA_TOOL_OPTIONS: -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8
+Starting a Gradle Daemon, 1 busy and 1 incompatible and 6 stopped Daemons could not be reused, use --status for details
+> Task :clean
+
+> Task :compileJava
+Picked up JAVA_TOOL_OPTIONS: -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8
+
+> Task :processResources
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+Picked up JAVA_TOOL_OPTIONS: -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.1)
+
+2026-01-01T02:14:14.686+09:00  INFO 29736 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Starting CbsMvpApplication using Java 21.0.9 with PID 29736 (C:\Users\h-iwa\cbs-mvp\build\classes\java\main started by h-iwa in C:\Users\h-iwa\cbs-mvp)
+2026-01-01T02:14:14.692+09:00  INFO 29736 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : No active profile set, falling back to 1 default profile: "default"
+2026-01-01T02:14:15.531+09:00  INFO 29736 --- [cbs-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-01-01T02:14:15.566+09:00  INFO 29736 --- [cbs-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 21 ms. Found 0 JPA repository interfaces.
+2026-01-01T02:14:16.319+09:00  INFO 29736 --- [cbs-mvp] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-01-01T02:14:16.350+09:00  INFO 29736 --- [cbs-mvp] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-01-01T02:14:16.350+09:00  INFO 29736 --- [cbs-mvp] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2026-01-01T02:14:16.474+09:00  INFO 29736 --- [cbs-mvp] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 1704 ms
+2026-01-01T02:14:16.727+09:00  INFO 29736 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-01-01T02:14:17.106+09:00  INFO 29736 --- [cbs-mvp] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1c57f6b2
+2026-01-01T02:14:17.108+09:00  INFO 29736 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-01-01T02:14:17.254+09:00  INFO 29736 --- [cbs-mvp] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-01-01T02:14:17.389+09:00  INFO 29736 --- [cbs-mvp] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.0.Final
+2026-01-01T02:14:18.311+09:00  INFO 29736 --- [cbs-mvp] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-01-01T02:14:18.525+09:00  INFO 29736 --- [cbs-mvp] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:postgresql://localhost:5432/cbs_mvp]
+	Database driver: PostgreSQL JDBC Driver
+	Database dialect: PostgreSQLDialect
+	Database version: 16.11
+	Default catalog/schema: cbs_mvp/public
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-01-01T02:14:19.256+09:00  INFO 29736 --- [cbs-mvp] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-01-01T02:14:19.270+09:00  INFO 29736 --- [cbs-mvp] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-01-01T02:14:19.356+09:00  WARN 29736 --- [cbs-mvp] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-01-01T02:14:19.824+09:00  INFO 29736 --- [cbs-mvp] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/'
+2026-01-01T02:14:19.830+09:00  INFO 29736 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Started CbsMvpApplication in 5.962 seconds (process running for 6.64)
+2026-01-01T02:21:00.790+09:00  INFO 29736 --- [cbs-mvp] [nio-8080-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-01-01T02:21:00.796+09:00  INFO 29736 --- [cbs-mvp] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-01-01T02:21:00.834+09:00  INFO 29736 --- [cbs-mvp] [nio-8080-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 38 ms
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command 'C:\Program Files\Eclipse Adoptium\jdk-21.0.9.10-hotspot\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to generate a Build Scan (powered by Develocity).
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 8m 20s
+5 actionable tasks: 5 executed
