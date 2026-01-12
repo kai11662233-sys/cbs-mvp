@@ -20,7 +20,10 @@ public class StubEbayOrderClient implements EbayOrderClient {
     public void uploadTracking(String ebayOrderKey, String carrier, String tracking) {
         String failPrefix = nz(flags.get(FAIL_PREFIX_KEY));
         if (!failPrefix.isBlank() && ebayOrderKey != null && ebayOrderKey.startsWith(failPrefix)) {
-            throw new RuntimeException("stub tracking upload failed for orderKey=" + ebayOrderKey);
+            throw new EbayOrderClientException(
+                    "stub tracking upload failed for orderKey=" + ebayOrderKey,
+                    true
+            );
         }
     }
 

@@ -2,7 +2,7 @@ package com.example.cbs_mvp.ops;
 
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Service
 public class SystemFlagService {
@@ -18,5 +18,12 @@ public class SystemFlagService {
      */
     public String get(String key) {
         return repo.findById(key).map(SystemFlag::getValue).orElse(null);
+    }
+
+    public void set(String key, String value) {
+        SystemFlag f = repo.findById(key).orElseGet(() -> new SystemFlag(key));
+        f.setValue(value);
+        f.setUpdatedAt(LocalDateTime.now());
+        repo.save(f);
     }
 }
