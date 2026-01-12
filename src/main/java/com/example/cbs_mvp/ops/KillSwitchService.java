@@ -43,12 +43,21 @@ public class KillSwitchService {
 
     @Transactional
     public void pause(String reason) {
+        pauseInternal(reason, "USER");
+    }
+
+    @Transactional
+    public void pauseFromBatch(String reason) {
+        pauseInternal(reason, "BATCH");
+    }
+
+    private void pauseInternal(String reason, String actor) {
         if (isPaused()) return;
         saveFlag(KEY_PAUSED, "true");
         saveFlag(KEY_REASON, nz(reason));
         log.error("KILL SWITCH ACTIVATED: {}", reason);
 
-        saveTransition("RUNNING", "PAUSED", "KILL_SWITCH", reason, "USER");
+        saveTransition("RUNNING", "PAUSED", "KILL_SWITCH", reason, actor);
     }
 
     @Transactional

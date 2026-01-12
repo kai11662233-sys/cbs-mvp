@@ -18,8 +18,14 @@ public class ProcurementController {
     private final ProcurementService procurementService;
     private final PurchaseOrderRepository poRepo;
 
+    // Deprecated: use /procurement/request
     @PostMapping("/po")
-    public ResponseEntity<?> createPo(@RequestBody CreatePoRequest req) {
+    public ResponseEntity<?> createPo(@RequestBody ProcurementRequest req) {
+        return requestProcurement(req);
+    }
+
+    @PostMapping("/request")
+    public ResponseEntity<?> requestProcurement(@RequestBody ProcurementRequest req) {
         var po = procurementService.createPoAndLedger(new ProcurementService.CreatePoCommand(
             req.orderId,
             req.supplierName,
@@ -37,12 +43,26 @@ public class ProcurementController {
         return ResponseEntity.ok(Map.of("openCommitmentsYen", v));
     }
 
-    public static class CreatePoRequest {
+    @PostMapping("/{poId}/confirm-payment")
+    public ResponseEntity<?> confirmPayment(@PathVariable Long poId) {
+        try {
+            var cl = procurementService.confirmPayment(poId);
+            return ResponseEntity.ok(Map.of(
+                    "poId", poId,
+                    "cashId", cl.getCashId(),
+                    "actualDate", cl.getActualDate()
+            ));
+        } catch (java.util.NoSuchElementException ex) {
+            return ResponseEntity.status(404).body(Map.of("error", "cash_ledger not found"));
+        }
+    }
+
+    public static class ProcurementRequest {
         public Long orderId;
+        public BigDecimal expectedTotalCostYen;
+        public String shipTo3plAddress;
         public String supplierName;
         public String supplierOrderRef;
-        public String shipTo3plAddress;
         public String inboundTracking;
-        public BigDecimal expectedTotalCostYen;
     }
 }

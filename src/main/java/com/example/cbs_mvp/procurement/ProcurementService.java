@@ -1,6 +1,7 @@
 package com.example.cbs_mvp.procurement;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -60,6 +61,16 @@ public class ProcurementService {
         transitions.log("PO", po.getPoId(), null, "REQUESTED", "CREATE_PO", null, "SYSTEM", cid);
 
         return po;
+    }
+
+    @Transactional
+    public CashLedger confirmPayment(Long poId) {
+        CashLedger cl = ledgerRepo.findByRefTableAndRefIdAndEventType(
+                "purchase_orders", poId, "PROCUREMENT"
+        ).orElseThrow();
+
+        cl.setActualDate(LocalDate.now());
+        return ledgerRepo.save(cl);
     }
 
     public record CreatePoCommand(

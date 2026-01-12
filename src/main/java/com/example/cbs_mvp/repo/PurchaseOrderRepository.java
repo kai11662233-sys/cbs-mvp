@@ -12,6 +12,8 @@ import java.util.List;
 
 @Repository
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, Long> {
+    List<PurchaseOrder> findByState(String state, Pageable pageable);
+
 
     // open_commitments（Freeze: EXISTS版）
     @Query(value = """
