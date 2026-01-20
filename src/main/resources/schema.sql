@@ -51,6 +51,11 @@ INSERT INTO system_flags(key, value) VALUES ('REFUND_FIX_RES', '0') ON CONFLICT 
 INSERT INTO system_flags(key, value) VALUES ('RECENT_SALES_30D', '0') ON CONFLICT (key) DO NOTHING;
 INSERT INTO system_flags(key, value) VALUES ('REFUND_RES_RATIO', '0.10') ON CONFLICT (key) DO NOTHING;
 INSERT INTO system_flags(key, value) VALUES ('WC_CAP_RATIO', '0.30') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('EBAY_TRACKING_RETRY_MAX_ATTEMPTS', '5') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('EBAY_TRACKING_RETRY_MAX_AGE_MINUTES', '60') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('EBAY_TRACKING_RETRY_BASE_DELAY_SECONDS', '60') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('EBAY_TRACKING_RETRY_MAX_DELAY_SECONDS', '900') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('EBAY_TRACKING_RETRY_BATCH_LIMIT', '20') ON CONFLICT (key) DO NOTHING;
 
 -- 2) candidates
 CREATE TABLE IF NOT EXISTS candidates (
@@ -116,9 +121,20 @@ CREATE TABLE IF NOT EXISTS orders (
     'SOLD','PROCUREMENT_REQUESTED','PROCUREMENT_SHIPPED_TO_3PL','PROCUREMENT_FAILED',
     '3PL_RECEIVED','3PL_SHIPPED_INTL','EBAY_TRACKING_UPLOADED','DELIVERED','CLAIM','REFUND','PAUSED'
   )),
+  tracking_retry_count INT NOT NULL DEFAULT 0,
+  tracking_retry_started_at TIMESTAMP,
+  tracking_next_retry_at TIMESTAMP,
+  tracking_retry_last_error TEXT,
+  tracking_retry_terminal_at TIMESTAMP,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_retry_count INT NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_retry_started_at TIMESTAMP;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_next_retry_at TIMESTAMP;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_retry_last_error TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tracking_retry_terminal_at TIMESTAMP;
 
 -- 6) purchase_orders（expected_total_cost_yen=M列相当の総コスト見込み）
 CREATE TABLE IF NOT EXISTS purchase_orders (

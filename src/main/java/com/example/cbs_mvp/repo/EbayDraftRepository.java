@@ -16,5 +16,8 @@ public interface EbayDraftRepository extends JpaRepository<EbayDraft, Long> {
     Optional<EbayDraft> findByCandidateId(Long candidateId);
 
     @Query("SELECT d FROM EbayDraft d ORDER BY d.updatedAt DESC")
-    List<EbayDraft> findRecent(Pageable pageable);
+    List<EbayDraft> findRecentByUpdatedAt(Pageable pageable);
+
+    @Query("SELECT d FROM EbayDraft d ORDER BY d.createdAt DESC")
+    List<EbayDraft> findRecentByCreatedAt(Pageable pageable);
 }

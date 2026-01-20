@@ -42,6 +42,21 @@ public class Order {
     @Column(name = "state", nullable = false, length = 30)
     private String state;
 
+    @Column(name = "tracking_retry_count", nullable = false)
+    private int trackingRetryCount;
+
+    @Column(name = "tracking_retry_started_at")
+    private LocalDateTime trackingRetryStartedAt;
+
+    @Column(name = "tracking_next_retry_at")
+    private LocalDateTime trackingNextRetryAt;
+
+    @Column(name = "tracking_retry_last_error")
+    private String trackingRetryLastError;
+
+    @Column(name = "tracking_retry_terminal_at")
+    private LocalDateTime trackingRetryTerminalAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
