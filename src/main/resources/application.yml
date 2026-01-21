@@ -18,6 +18,28 @@ spring:
       schema-locations: classpath:schema.sql
       encoding: UTF-8
 
+  profiles:
+    active: stub  # 本番eBay連携時は real に変更
+
 logging:
   level:
     org.springframework.scheduling: INFO
+    com.example.cbs_mvp.ebay: DEBUG
+
+# eBay OAuth設定（環境変数で上書き可能）
+ebay:
+  client-id: ${EBAY_CLIENT_ID:}
+  client-secret: ${EBAY_CLIENT_SECRET:}
+  ru-name: ${EBAY_RU_NAME:}
+  sandbox: true
+
+# JWT設定
+jwt:
+  secret: ${JWT_SECRET:default-secret-key-change-in-production-at-least-32-bytes}
+  expiration-hours: 24
+
+# 為替レートAPI設定
+fx:
+  api-key: ${FX_API_KEY:}
+  base-currency: USD
+  target-currency: JPY

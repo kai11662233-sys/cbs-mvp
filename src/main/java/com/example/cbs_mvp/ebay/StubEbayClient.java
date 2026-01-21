@@ -2,11 +2,8 @@ package com.example.cbs_mvp.ebay;
 
 import java.util.Map;
 
-import org.springframework.stereotype.Component;
-
 import com.example.cbs_mvp.ops.SystemFlagService;
 
-@Component
 public class StubEbayClient implements EbayClient {
 
     private static final String FAIL_PREFIX_KEY = "EBAY_STUB_FAIL_SKU_PREFIX";

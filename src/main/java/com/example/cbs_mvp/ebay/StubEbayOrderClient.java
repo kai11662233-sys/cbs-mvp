@@ -1,10 +1,7 @@
 package com.example.cbs_mvp.ebay;
 
-import org.springframework.stereotype.Component;
-
 import com.example.cbs_mvp.ops.SystemFlagService;
 
-@Component
 public class StubEbayOrderClient implements EbayOrderClient {
 
     private static final String FAIL_PREFIX_KEY = "EBAY_STUB_TRACKING_FAIL_ORDER_PREFIX";
@@ -22,14 +19,14 @@ public class StubEbayOrderClient implements EbayOrderClient {
         if (!failPrefix.isBlank() && ebayOrderKey != null && ebayOrderKey.startsWith(failPrefix)) {
             throw new EbayOrderClientException(
                     "stub tracking upload failed for orderKey=" + ebayOrderKey,
-                    true
-            );
+                    true);
         }
     }
 
     @Override
     public boolean checkTrackingUploaded(String ebayOrderKey) {
-        if (ebayOrderKey == null || ebayOrderKey.isBlank()) return false;
+        if (ebayOrderKey == null || ebayOrderKey.isBlank())
+            return false;
         String missingPrefix = nz(flags.get(MISSING_PREFIX_KEY));
         if (!missingPrefix.isBlank() && ebayOrderKey.startsWith(missingPrefix)) {
             return false;
@@ -37,5 +34,7 @@ public class StubEbayOrderClient implements EbayOrderClient {
         return true;
     }
 
-    private static String nz(String v) { return v == null ? "" : v.trim(); }
+    private static String nz(String v) {
+        return v == null ? "" : v.trim();
+    }
 }
