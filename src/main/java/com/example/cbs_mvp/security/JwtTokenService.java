@@ -52,8 +52,8 @@ public class JwtTokenService {
                             "Set JWT_SECRET environment variable with a secure value.");
         }
 
-        // 安全な鍵生成（SHA-256ハッシュを使用して固定長の鍵を生成）
-        byte[] keyBytes = jwtSecret.getBytes();
+        // 安全な鍵生成（UTF-8明示で環境依存を排除）
+        byte[] keyBytes = jwtSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8);
         if (keyBytes.length < 32) {
             // この時点でエラーになるはずだが、念のため
             throw new IllegalStateException("JWT secret must be at least 32 bytes");

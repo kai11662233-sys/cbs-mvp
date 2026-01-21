@@ -29,7 +29,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 公開エンドポイント
                         .requestMatchers("/health", "/health/**").permitAll()
-                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/change-password").authenticated() // 認証必須
                         .requestMatchers("/ops/status").permitAll()
                         .requestMatchers("/pricing/**").permitAll()
                         .requestMatchers("/ebay/webhook").permitAll()

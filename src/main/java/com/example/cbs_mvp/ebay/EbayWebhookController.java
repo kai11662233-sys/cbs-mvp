@@ -117,10 +117,11 @@ public class EbayWebhookController {
             mac.init(secretKey);
 
             byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            String expectedSignature = bytesToHex(hash);
+            byte[] expectedSignatureBytes = bytesToHex(hash).toLowerCase().getBytes(StandardCharsets.UTF_8);
+            byte[] actualSignatureBytes = signature.toLowerCase().getBytes(StandardCharsets.UTF_8);
 
-            // 比較（タイミング攻撃対策のため定数時間比較は省略、本番では推奨）
-            return expectedSignature.equalsIgnoreCase(signature);
+            // 定数時間比較（タイミング攻撃対策）
+            return java.security.MessageDigest.isEqual(expectedSignatureBytes, actualSignatureBytes);
 
         } catch (Exception e) {
             log.error("Signature verification error", e);
