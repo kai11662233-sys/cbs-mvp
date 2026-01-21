@@ -53,16 +53,23 @@ public class CandidateCsvImportService {
                 return new ImportResult(0, 0, List.of("Empty file"));
             }
 
+            // BOM除去
+            if (headerLine.startsWith("\uFEFF")) {
+                headerLine = headerLine.substring(1);
+            }
+
             // ヘッダー解析
-            String[] headers = headerLine.split(",");
+            String[] headers = parseCsvLine(headerLine);
             int urlIdx = findIndex(headers, "sourceUrl", "url", "source_url");
             int priceIdx = findIndex(headers, "sourcePriceYen", "price", "source_price_yen");
             int weightIdx = findIndex(headers, "weightKg", "weight", "weight_kg");
             int sizeIdx = findIndex(headers, "sizeTier", "size", "size_tier");
-            int titleIdx = findIndex(headers, "title", "name");
 
             if (urlIdx < 0) {
                 return new ImportResult(0, 0, List.of("Missing required column: sourceUrl"));
+            }
+            if (priceIdx < 0) {
+                return new ImportResult(0, 0, List.of("Missing required column: sourcePriceYen"));
             }
 
             String line;
@@ -76,28 +83,63 @@ public class CandidateCsvImportService {
                 try {
                     String[] values = parseCsvLine(line);
 
+                    // sourceUrl 検証
                     String url = getValueSafe(values, urlIdx, "");
                     if (url.isBlank()) {
                         errors.add("Line " + lineNumber + ": sourceUrl is required");
                         continue;
                     }
 
+                    // sourcePriceYen 検証（必須）
+                    String priceStr = getValueSafe(values, priceIdx, "");
+                    if (priceStr.isBlank()) {
+                        errors.add("Line " + lineNumber + ": sourcePriceYen is required");
+                        continue;
+                    }
+                    BigDecimal price = parseBigDecimalStrict(priceStr);
+                    if (price == null) {
+                        errors.add("Line " + lineNumber + ": invalid sourcePriceYen: " + priceStr);
+                        continue;
+                    }
+                    if (price.compareTo(BigDecimal.ZERO) <= 0) {
+                        errors.add("Line " + lineNumber + ": sourcePriceYen must be positive");
+                        continue;
+                    }
+
                     // 重複チェック
                     if (candidateRepo.findBySourceUrl(url).isPresent()) {
-                        errors.add("Line " + lineNumber + ": duplicate URL: " + url);
+                        errors.add("Line " + lineNumber + ": duplicate URL: " + truncate(url, 50));
                         continue;
+                    }
+
+                    // weightKg 検証（オプション、あれば正の数）
+                    BigDecimal weight = null;
+                    String weightStr = getValueSafe(values, weightIdx, null);
+                    if (weightStr != null && !weightStr.isBlank()) {
+                        weight = parseBigDecimalStrict(weightStr);
+                        if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
+                            errors.add("Line " + lineNumber + ": invalid weightKg: " + weightStr);
+                            continue;
+                        }
+                    }
+
+                    // sizeTier 検証（オプション）
+                    String sizeTier = getValueSafe(values, sizeIdx, null);
+                    if (sizeTier != null && !sizeTier.isBlank()) {
+                        sizeTier = sizeTier.trim().toUpperCase();
+                        if (!isValidSizeTier(sizeTier)) {
+                            errors.add("Line " + lineNumber + ": invalid sizeTier: " + sizeTier
+                                    + " (expected: S/M/L/XL/XXL)");
+                            continue;
+                        }
                     }
 
                     Candidate candidate = new Candidate();
                     candidate.setSourceUrl(url);
-                    candidate.setSourcePriceYen(parseBigDecimal(getValueSafe(values, priceIdx, "0")));
-                    candidate.setWeightKg(parseBigDecimal(getValueSafe(values, weightIdx, null)));
-                    candidate.setSizeTier(getValueSafe(values, sizeIdx, null));
+                    candidate.setSourcePriceYen(price);
+                    candidate.setWeightKg(weight);
+                    candidate.setSizeTier(sizeTier);
                     candidate.setState("CANDIDATE");
-
-                    if (titleIdx >= 0 && titleIdx < values.length) {
-                        // タイトルは将来の拡張用
-                    }
 
                     candidateRepo.save(candidate);
 
@@ -147,31 +189,71 @@ public class CandidateCsvImportService {
         return val.isEmpty() ? defaultValue : val;
     }
 
-    private BigDecimal parseBigDecimal(String value) {
+    /**
+     * 厳密なBigDecimalパース。失敗時はnullを返す。
+     */
+    private BigDecimal parseBigDecimalStrict(String value) {
         if (value == null || value.isBlank()) {
             return null;
         }
         try {
-            return new BigDecimal(value.replace(",", ""));
+            // カンマ、円記号、スペースを除去
+            String cleaned = value.replace(",", "")
+                    .replace("¥", "")
+                    .replace("￥", "")
+                    .replace(" ", "")
+                    .trim();
+            return new BigDecimal(cleaned);
         } catch (NumberFormatException e) {
             return null;
         }
     }
 
+    private boolean isValidSizeTier(String tier) {
+        return tier != null && ("S".equals(tier) || "M".equals(tier) || "L".equals(tier) ||
+                "XL".equals(tier) || "XXL".equals(tier));
+    }
+
+    private String truncate(String s, int maxLen) {
+        if (s == null)
+            return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
+    }
+
+    /**
+     * CSVパース（引用符、エスケープ対応）
+     * ダブルクォート内の "" はエスケープとして扱う
+     */
     private String[] parseCsvLine(String line) {
-        // 簡易CSVパース（引用符対応）
         List<String> values = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
+        char[] chars = line.toCharArray();
 
-        for (char c : line.toCharArray()) {
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == ',' && !inQuotes) {
-                values.add(current.toString());
-                current = new StringBuilder();
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+
+            if (inQuotes) {
+                if (c == '"') {
+                    // 次も " ならエスケープ
+                    if (i + 1 < chars.length && chars[i + 1] == '"') {
+                        current.append('"');
+                        i++; // skip next quote
+                    } else {
+                        inQuotes = false;
+                    }
+                } else {
+                    current.append(c);
+                }
             } else {
-                current.append(c);
+                if (c == '"') {
+                    inQuotes = true;
+                } else if (c == ',') {
+                    values.add(current.toString());
+                    current = new StringBuilder();
+                } else {
+                    current.append(c);
+                }
             }
         }
         values.add(current.toString());

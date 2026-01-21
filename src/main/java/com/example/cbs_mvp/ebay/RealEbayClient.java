@@ -165,8 +165,8 @@ public class RealEbayClient implements EbayClient {
                                 "value", priceStr,
                                 "currency", "USD")),
                 "listingPolicies", Map.of(
-                        "fulfillmentPolicyId", config.getRuName(), // 仮：実際はポリシーID
-                        "paymentPolicyId", config.getRuName(),
-                        "returnPolicyId", config.getRuName()));
+                        "fulfillmentPolicyId", config.getEffectiveFulfillmentPolicyId(),
+                        "paymentPolicyId", config.getEffectivePaymentPolicyId(),
+                        "returnPolicyId", config.getEffectiveReturnPolicyId()));
     }
 }

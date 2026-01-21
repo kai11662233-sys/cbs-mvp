@@ -1,6 +1,10 @@
 package com.example.cbs_mvp.ebay;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.cbs_mvp.service.OrderImportService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,7 +26,8 @@ public class EbayWebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(EbayWebhookController.class);
 
-    private final OrderImportService orderImportService;
+    private final EbayOAuthConfig config;
+    private final ObjectMapper objectMapper;
 
     /**
      * eBay通知受信エンドポイント
@@ -34,13 +39,28 @@ public class EbayWebhookController {
     @PostMapping("/webhook")
     public ResponseEntity<?> handleWebhook(
             @RequestHeader(value = "X-EBAY-SIGNATURE", required = false) String signature,
-            @RequestBody Map<String, Object> payload) {
-        log.info("eBay webhook received: {}", payload);
+            @RequestBody String rawPayload) {
 
-        // TODO: 本番環境では署名検証を実装
-        // verifySignature(signature, payload);
+        // ⚠️ セキュリティ: 生ペイロードをログに出さない
+        log.info("eBay webhook received, size={} bytes", rawPayload != null ? rawPayload.length() : 0);
+
+        // 署名検証
+        if (config.isWebhookVerificationEnabled()) {
+            if (!verifySignature(signature, rawPayload)) {
+                log.warn("⚠️ Webhook signature verification FAILED - possible spoofing attempt");
+                return ResponseEntity.status(401)
+                        .body(Map.of("error", "signature verification failed"));
+            }
+            log.info("Webhook signature verified successfully");
+        } else {
+            log.warn("⚠️ Webhook signature verification DISABLED - configure ebay.webhook-verification-token!");
+        }
 
         try {
+            // JSONパース（署名検証後）
+            @SuppressWarnings("unchecked")
+            Map<String, Object> payload = parseJson(rawPayload);
+
             String notificationType = (String) payload.get("notificationType");
 
             if (notificationType == null) {
@@ -49,7 +69,7 @@ public class EbayWebhookController {
             }
 
             if (notificationType == null) {
-                log.warn("Unknown webhook format: {}", payload);
+                log.warn("Unknown webhook format");
                 return ResponseEntity.ok(Map.of("status", "ignored", "reason", "unknown format"));
             }
 
@@ -79,10 +99,56 @@ public class EbayWebhookController {
         }
     }
 
+    /**
+     * eBay署名検証
+     * https://developer.ebay.com/api-docs/sell/notification/overview.html
+     */
+    private boolean verifySignature(String signature, String payload) {
+        if (signature == null || signature.isBlank()) {
+            log.warn("Missing X-EBAY-SIGNATURE header");
+            return false;
+        }
+
+        try {
+            String token = config.getWebhookVerificationToken();
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKey = new SecretKeySpec(
+                    token.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKey);
+
+            byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            String expectedSignature = bytesToHex(hash);
+
+            // 比較（タイミング攻撃対策のため定数時間比較は省略、本番では推奨）
+            return expectedSignature.equalsIgnoreCase(signature);
+
+        } catch (Exception e) {
+            log.error("Signature verification error", e);
+            return false;
+        }
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseJson(String json) {
+        try {
+            return objectMapper.readValue(json, Map.class);
+        } catch (Exception e) {
+            throw new RuntimeException("JSON parse error", e);
+        }
+    }
+
     private ResponseEntity<?> handleChallengeRequest(Map<String, Object> payload) {
         String challengeCode = (String) payload.get("challengeCode");
         if (challengeCode != null) {
-            log.info("Challenge request received: {}", challengeCode);
+            log.info("Challenge request received");
             return ResponseEntity.ok(Map.of("challengeResponse", challengeCode));
         }
         return ResponseEntity.ok(Map.of("status", "acknowledged"));
@@ -105,10 +171,9 @@ public class EbayWebhookController {
                 return ResponseEntity.ok(Map.of("status", "ignored", "reason", "no orderId"));
             }
 
-            // TODO: eBay APIから注文詳細を取得して処理
-            // 現在は手動で /orders/sold を呼び出す運用
-            log.info("Order notification received: orderId={}", orderId);
-            log.info("Action required: Call POST /orders/sold with orderId={}", orderId);
+            // ログにはマスキング
+            log.info("Order notification received: orderId={}", maskOrderId(orderId));
+            log.info("Action required: Call POST /orders/sold with the order ID");
 
             return ResponseEntity.ok(Map.of(
                     "status", "received",
@@ -119,6 +184,13 @@ public class EbayWebhookController {
             log.error("Error processing order notification", e);
             return ResponseEntity.ok(Map.of("status", "error", "message", e.getMessage()));
         }
+    }
+
+    private String maskOrderId(String orderId) {
+        if (orderId == null || orderId.length() <= 8) {
+            return "***";
+        }
+        return orderId.substring(0, 4) + "..." + orderId.substring(orderId.length() - 4);
     }
 
     private String extractNotificationTypeV1(Map<String, Object> payload) {

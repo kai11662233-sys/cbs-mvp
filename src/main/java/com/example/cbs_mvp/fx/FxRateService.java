@@ -135,9 +135,11 @@ public class FxRateService {
                 throw new RuntimeException("FX API error: " + response.get("error-type"));
             }
 
+            // 精度を保つため文字列経由でBigDecimalに変換
             Object rateObj = response.get("conversion_rate");
-            if (rateObj instanceof Number) {
-                return BigDecimal.valueOf(((Number) rateObj).doubleValue());
+            if (rateObj != null) {
+                // String.valueOf で文字列化してからBigDecimalに変換（精度劣化回避）
+                return new BigDecimal(String.valueOf(rateObj));
             }
 
             throw new RuntimeException("Invalid rate format: " + rateObj);

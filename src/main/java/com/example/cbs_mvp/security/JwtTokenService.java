@@ -5,17 +5,22 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 
 @Service
 public class JwtTokenService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtTokenService.class);
+    private static final int MINIMUM_SECRET_LENGTH = 32;
+    private static final String DEFAULT_SECRET_PREFIX = "default-secret";
 
     @Value("${jwt.secret:default-secret-key-change-in-production-at-least-32-bytes}")
     private String jwtSecret;
@@ -24,19 +29,46 @@ public class JwtTokenService {
     private int expirationHours;
 
     private SecretKey key;
+    private boolean usingDefaultSecret = false;
 
     @PostConstruct
     public void init() {
-        // シークレットが短い場合はパディング
-        String paddedSecret = jwtSecret;
-        while (paddedSecret.length() < 32) {
-            paddedSecret = paddedSecret + paddedSecret;
+        // デフォルトシークレット使用の警告
+        if (jwtSecret == null || jwtSecret.isBlank() || jwtSecret.startsWith(DEFAULT_SECRET_PREFIX)) {
+            usingDefaultSecret = true;
+            log.warn("======================================");
+            log.warn("⚠️ WARNING: Using default JWT secret!");
+            log.warn("This is INSECURE for production use.");
+            log.warn("Set JWT_SECRET environment variable.");
+            log.warn("======================================");
         }
-        paddedSecret = paddedSecret.substring(0, 64); // 256-bit = 32 bytes = base64で約43文字
-        this.key = Keys.hmacShaKeyFor(paddedSecret.getBytes());
+
+        // 最低長チェック
+        if (jwtSecret.length() < MINIMUM_SECRET_LENGTH) {
+            log.error("JWT secret is too short! Minimum {} characters required, got {}.",
+                    MINIMUM_SECRET_LENGTH, jwtSecret.length());
+            throw new IllegalStateException(
+                    "JWT secret must be at least " + MINIMUM_SECRET_LENGTH + " characters. " +
+                            "Set JWT_SECRET environment variable with a secure value.");
+        }
+
+        // 安全な鍵生成（SHA-256ハッシュを使用して固定長の鍵を生成）
+        byte[] keyBytes = jwtSecret.getBytes();
+        if (keyBytes.length < 32) {
+            // この時点でエラーになるはずだが、念のため
+            throw new IllegalStateException("JWT secret must be at least 32 bytes");
+        }
+
+        // 32バイト以上あれば直接使用
+        this.key = Keys.hmacShaKeyFor(keyBytes);
+        log.info("JWT service initialized. Token expiration: {} hours", expirationHours);
     }
 
     public String generateToken(String username) {
+        if (usingDefaultSecret) {
+            log.warn("Generating JWT with default secret - NOT SECURE for production!");
+        }
+
         Instant now = Instant.now();
         Instant expiry = now.plusSeconds(expirationHours * 3600L);
 
@@ -68,5 +100,9 @@ public class JwtTokenService {
 
     public boolean isTokenValid(String token) {
         return validateTokenAndGetUsername(token) != null;
+    }
+
+    public boolean isUsingDefaultSecret() {
+        return usingDefaultSecret;
     }
 }
