@@ -266,4 +266,143 @@ public class CandidateCsvImportService {
             return errorCount > 0;
         }
     }
+
+    /**
+     * CSVプレビュー用データ
+     */
+    public record PreviewData(
+            int lineNumber,
+            String sourceUrl,
+            String sourcePriceYen,
+            String weightKg,
+            String sizeTier,
+            boolean isValid,
+            String errorMessage) {
+    }
+
+    public record PreviewResult(
+            int totalRows,
+            int validRows,
+            List<String> errors,
+            List<PreviewData> previewData) {
+    }
+
+    /**
+     * CSVのプレビュー/バリデーション（DBには保存しない）
+     */
+    public PreviewResult previewFromCsv(InputStream inputStream) {
+        List<String> errors = new ArrayList<>();
+        List<PreviewData> previewData = new ArrayList<>();
+        int totalRows = 0;
+        int validRows = 0;
+        int lineNumber = 0;
+
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+
+            String headerLine = reader.readLine();
+            lineNumber++;
+
+            if (headerLine == null) {
+                return new PreviewResult(0, 0, List.of("Empty file"), List.of());
+            }
+
+            // BOM除去
+            if (headerLine.startsWith("\uFEFF")) {
+                headerLine = headerLine.substring(1);
+            }
+
+            // ヘッダー解析
+            String[] headers = parseCsvLine(headerLine);
+            int urlIdx = findIndex(headers, "sourceUrl", "url", "source_url");
+            int priceIdx = findIndex(headers, "sourcePriceYen", "price", "source_price_yen");
+            int weightIdx = findIndex(headers, "weightKg", "weight", "weight_kg");
+            int sizeIdx = findIndex(headers, "sizeTier", "size", "size_tier");
+
+            if (urlIdx < 0) {
+                return new PreviewResult(0, 0, List.of("Missing required column: sourceUrl"), List.of());
+            }
+            if (priceIdx < 0) {
+                return new PreviewResult(0, 0, List.of("Missing required column: sourcePriceYen"), List.of());
+            }
+
+            String line;
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                if (line.isBlank()) {
+                    continue;
+                }
+
+                totalRows++;
+                String[] values = parseCsvLine(line);
+                String url = getValueSafe(values, urlIdx, "");
+                String priceStr = getValueSafe(values, priceIdx, "");
+                String weightStr = getValueSafe(values, weightIdx, "");
+                String sizeStr = getValueSafe(values, sizeIdx, "");
+
+                String errorMsg = validateRow(lineNumber, url, priceStr, weightStr, sizeStr);
+
+                if (errorMsg != null) {
+                    errors.add(errorMsg);
+                    previewData.add(new PreviewData(lineNumber, url, priceStr, weightStr, sizeStr, false, errorMsg));
+                } else {
+                    validRows++;
+                    previewData.add(new PreviewData(lineNumber, url, priceStr, weightStr, sizeStr, true, null));
+                }
+            }
+
+        } catch (IOException e) {
+            log.error("CSV preview failed", e);
+            errors.add("IO error: " + e.getMessage());
+        }
+
+        log.info("CSV preview completed: {} total, {} valid, {} errors", totalRows, validRows, errors.size());
+        return new PreviewResult(totalRows, validRows, errors, previewData);
+    }
+
+    /**
+     * 行のバリデーション（エラーメッセージを返す、正常ならnull）
+     */
+    private String validateRow(int lineNumber, String url, String priceStr, String weightStr, String sizeStr) {
+        // URL必須
+        if (url.isBlank()) {
+            return "Line " + lineNumber + ": sourceUrl is required";
+        }
+
+        // 価格必須
+        if (priceStr.isBlank()) {
+            return "Line " + lineNumber + ": sourcePriceYen is required";
+        }
+        BigDecimal price = parseBigDecimalStrict(priceStr);
+        if (price == null) {
+            return "Line " + lineNumber + ": invalid sourcePriceYen: " + priceStr;
+        }
+        if (price.compareTo(BigDecimal.ZERO) <= 0) {
+            return "Line " + lineNumber + ": sourcePriceYen must be positive";
+        }
+
+        // 重複チェック
+        if (candidateRepo.findBySourceUrl(url).isPresent()) {
+            return "Line " + lineNumber + ": duplicate URL (already exists in DB)";
+        }
+
+        // 重量（オプション）
+        if (weightStr != null && !weightStr.isBlank()) {
+            BigDecimal weight = parseBigDecimalStrict(weightStr);
+            if (weight == null || weight.compareTo(BigDecimal.ZERO) <= 0) {
+                return "Line " + lineNumber + ": invalid weightKg: " + weightStr;
+            }
+        }
+
+        // サイズ（オプション）
+        if (sizeStr != null && !sizeStr.isBlank()) {
+            String size = sizeStr.trim().toUpperCase();
+            if (!isValidSizeTier(size)) {
+                return "Line " + lineNumber + ": invalid sizeTier: " + sizeStr + " (expected: S/M/L/XL/XXL)";
+            }
+        }
+
+        return null; // OK
+    }
 }
