@@ -25,24 +25,32 @@ public class CandidateCsvImportController {
      * POST /candidates/import-csv
      * Content-Type: multipart/form-data
      * Body: file=@candidates.csv
+     * 
+     * @param skipDuplicates true: 重複URLはスキップして成功扱い（デフォルト: false）
      */
     @PostMapping(value = "/import-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> importCsv(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<?> importCsv(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "skipDuplicates", defaultValue = "false") boolean skipDuplicates) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "File is required"));
         }
 
         try {
-            CandidateCsvImportService.ImportResult result = csvImportService.importFromCsv(file.getInputStream());
+            CandidateCsvImportService.ImportResult result = csvImportService.importFromCsv(
+                    file.getInputStream(), skipDuplicates);
 
             return ResponseEntity.ok(Map.of(
                     "successCount", result.successCount(),
+                    "skippedCount", result.skippedCount(),
                     "errorCount", result.errorCount(),
                     "errors", result.errors().stream().limit(20).toList(),
                     "message", result.hasErrors()
                             ? "Import completed with errors"
-                            : "Import completed successfully"));
+                            : (result.skippedCount() > 0
+                                    ? "Import completed (" + result.skippedCount() + " duplicates skipped)"
+                                    : "Import completed successfully")));
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError()

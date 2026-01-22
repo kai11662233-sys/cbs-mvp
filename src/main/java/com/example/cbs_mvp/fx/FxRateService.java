@@ -12,7 +12,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.example.cbs_mvp.entity.FxRateHistory;
 import com.example.cbs_mvp.ops.SystemFlagService;
+import com.example.cbs_mvp.repo.FxRateHistoryRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,9 +25,11 @@ public class FxRateService {
     private static final Logger log = LoggerFactory.getLogger(FxRateService.class);
     private static final String FX_RATE_FLAG = "FX_RATE";
     private static final String FX_RATE_UPDATED_AT_FLAG = "FX_RATE_UPDATED_AT";
+    private static final BigDecimal ANOMALY_THRESHOLD_PERCENT = new BigDecimal("5.0"); // 5%変動で警告
 
     private final SystemFlagService flagService;
     private final WebClient.Builder webClientBuilder;
+    private final FxRateHistoryRepository historyRepo;
 
     @Value("${fx.api-key:}")
     private String apiKey;
@@ -62,11 +66,15 @@ public class FxRateService {
                 throw new RuntimeException("Invalid rate received: " + rate);
             }
 
+            // 履歴記録と異常検知
+            boolean isAnomaly = recordHistory(rate);
+
             flagService.set(FX_RATE_FLAG, rate.setScale(4, RoundingMode.HALF_UP).toPlainString());
             flagService.set(FX_RATE_UPDATED_AT_FLAG, Instant.now().toString());
 
-            log.info("FX rate updated: {} {} = {} {}",
-                    "1", baseCurrency, rate, targetCurrency);
+            log.info("FX rate updated: {} {} = {} {}{}",
+                    "1", baseCurrency, rate, targetCurrency,
+                    isAnomaly ? " [⚠️ ANOMALY DETECTED]" : "");
 
             return new FxRateResult(rate, Instant.now(), null);
 
@@ -74,6 +82,44 @@ public class FxRateService {
             log.error("Failed to refresh FX rate", e);
             return new FxRateResult(null, null, e.getMessage());
         }
+    }
+
+    /**
+     * 履歴記録と異常検知
+     * 
+     * @return true if anomaly detected
+     */
+    private boolean recordHistory(BigDecimal newRate) {
+        FxRateHistory history = new FxRateHistory();
+        history.setBaseCurrency(baseCurrency);
+        history.setTargetCurrency(targetCurrency);
+        history.setRate(newRate);
+        history.setSource("ExchangeRate-API");
+
+        // 前回レートとの比較
+        var lastOpt = historyRepo.findTopByBaseCurrencyAndTargetCurrencyOrderByFetchedAtDesc(
+                baseCurrency, targetCurrency);
+
+        boolean isAnomaly = false;
+        if (lastOpt.isPresent()) {
+            BigDecimal lastRate = lastOpt.get().getRate();
+            BigDecimal changePercent = newRate.subtract(lastRate)
+                    .divide(lastRate, 6, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100"));
+
+            history.setChangePercent(changePercent);
+
+            // 異常検知
+            if (changePercent.abs().compareTo(ANOMALY_THRESHOLD_PERCENT) >= 0) {
+                isAnomaly = true;
+                history.setAnomaly(true);
+                log.error("🚨 FX Rate ANOMALY: {} {} = {} {} (変化率: {}%) - 手動確認が必要",
+                        "1", baseCurrency, newRate, targetCurrency, changePercent.setScale(2, RoundingMode.HALF_UP));
+            }
+        }
+
+        historyRepo.save(history);
+        return isAnomaly;
     }
 
     /**

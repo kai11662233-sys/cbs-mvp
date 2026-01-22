@@ -35,12 +35,14 @@ public class CandidateCsvImportService {
      * CSV形式 (ヘッダー必須):
      * sourceUrl,sourcePriceYen,weightKg,sizeTier,title
      * 
+     * @param skipDuplicates true: 重複URLはスキップして成功カウント、false: エラーとして報告
      * @return インポート結果
      */
     @Transactional
-    public ImportResult importFromCsv(InputStream inputStream) {
+    public ImportResult importFromCsv(InputStream inputStream, boolean skipDuplicates) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
+        int skippedCount = 0;
         int lineNumber = 0;
 
         try (BufferedReader reader = new BufferedReader(
@@ -50,7 +52,7 @@ public class CandidateCsvImportService {
             lineNumber++;
 
             if (headerLine == null) {
-                return new ImportResult(0, 0, List.of("Empty file"));
+                return new ImportResult(0, 0, 1, List.of("Empty file"));
             }
 
             // BOM除去
@@ -66,10 +68,10 @@ public class CandidateCsvImportService {
             int sizeIdx = findIndex(headers, "sizeTier", "size", "size_tier");
 
             if (urlIdx < 0) {
-                return new ImportResult(0, 0, List.of("Missing required column: sourceUrl"));
+                return new ImportResult(0, 0, 1, List.of("Missing required column: sourceUrl"));
             }
             if (priceIdx < 0) {
-                return new ImportResult(0, 0, List.of("Missing required column: sourcePriceYen"));
+                return new ImportResult(0, 0, 1, List.of("Missing required column: sourcePriceYen"));
             }
 
             String line;
@@ -108,8 +110,13 @@ public class CandidateCsvImportService {
 
                     // 重複チェック
                     if (candidateRepo.findBySourceUrl(url).isPresent()) {
-                        errors.add("Line " + lineNumber + ": duplicate URL: " + truncate(url, 50));
-                        continue;
+                        if (skipDuplicates) {
+                            skippedCount++;
+                            continue; // スキップして成功扱い
+                        } else {
+                            errors.add("Line " + lineNumber + ": duplicate URL: " + truncate(url, 50));
+                            continue;
+                        }
                     }
 
                     // weightKg 検証（オプション、あれば正の数）
@@ -165,8 +172,8 @@ public class CandidateCsvImportService {
             errors.add("IO error: " + e.getMessage());
         }
 
-        log.info("CSV import completed: {} success, {} errors", successCount, errors.size());
-        return new ImportResult(successCount, errors.size(), errors);
+        log.info("CSV import completed: {} success, {} skipped, {} errors", successCount, skippedCount, errors.size());
+        return new ImportResult(successCount, skippedCount, errors.size(), errors);
     }
 
     private int findIndex(String[] headers, String... names) {
@@ -261,7 +268,7 @@ public class CandidateCsvImportService {
         return values.toArray(new String[0]);
     }
 
-    public record ImportResult(int successCount, int errorCount, List<String> errors) {
+    public record ImportResult(int successCount, int skippedCount, int errorCount, List<String> errors) {
         public boolean hasErrors() {
             return errorCount > 0;
         }
