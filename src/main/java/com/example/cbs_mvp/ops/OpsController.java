@@ -40,8 +40,7 @@ public class OpsController {
             CashLedgerRepository cashLedgerRepo,
             EbayDraftRepository draftRepo,
             StateTransitionService transitions,
-            StateTransitionRepository transitionRepo
-    ) {
+            StateTransitionRepository transitionRepo) {
         this.opsKeyService = opsKeyService;
         this.killSwitchService = killSwitchService;
         this.flags = flags;
@@ -65,15 +64,13 @@ public class OpsController {
         return Map.of(
                 "paused", paused,
                 "reason", reason,
-                "updatedAt", updatedAt
-        );
+                "updatedAt", updatedAt);
     }
 
     @PostMapping("/pause")
     public ResponseEntity<?> pause(
             @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
-            @RequestBody(required = false) Map<String, Object> body
-    ) {
+            @RequestBody(required = false) Map<String, Object> body) {
         if (!opsKeyService.isValid(opsKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid ops key"));
         }
@@ -91,10 +88,22 @@ public class OpsController {
         return ResponseEntity.ok(Map.of("paused", false));
     }
 
+    /**
+     * サマリー情報取得
+     * OPS-KEY または JWT認証で利用可能
+     */
     @GetMapping("/summary")
-    public ResponseEntity<?> summary(@RequestHeader(value = "X-OPS-KEY", required = false) String opsKey) {
-        if (!opsKeyService.isValid(opsKey)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid ops key"));
+    public ResponseEntity<?> summary(
+            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+
+        // OPS-KEY または JWT認証をチェック
+        boolean isOpsKeyValid = opsKeyService.isValid(opsKey);
+        boolean isJwtValid = authHeader != null && authHeader.startsWith("Bearer ");
+
+        if (!isOpsKeyValid && !isJwtValid) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "X-OPS-KEY or JWT required"));
         }
 
         BigDecimal openCommitments = nz(poRepo.calculateOpenCommitments());
@@ -117,8 +126,7 @@ public class OpsController {
                 Map.entry("poFailedLast10", poFailedLast10),
                 Map.entry("trackingFailedLast10", trackingFailedLast10),
                 Map.entry("lastFailureCount", lastFailureCount),
-                Map.entry("ts", Instant.now().toString())
-        ));
+                Map.entry("ts", Instant.now().toString())));
     }
 
     @PostMapping("/recalc-sales-30d")
@@ -138,14 +146,12 @@ public class OpsController {
                 "RECENT_SALES_30D_RECALC",
                 "value=" + sales30dYen,
                 "SYSTEM",
-                cid()
-        );
+                cid());
 
         return ResponseEntity.ok(Map.of(
                 "sales30dYen", sales30dYen,
                 "updatedFlagYen", sales30dYen,
-                "ts", Instant.now().toString()
-        ));
+                "ts", Instant.now().toString()));
     }
 
     private BigDecimal sumSales30d() {
@@ -171,8 +177,7 @@ public class OpsController {
         var recent = transitionRepo.findRecentByEntityTypeAndReasonCode(
                 "ORDER",
                 "EBAY_TRACKING_UPLOAD_FAILED",
-                PageRequest.of(0, 10)
-        );
+                PageRequest.of(0, 10));
         return (int) recent.stream()
                 .map(StateTransition::getEntityId)
                 .distinct()

@@ -1,18 +1,24 @@
 package com.example.cbs_mvp.orders;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.cbs_mvp.entity.CashLedger;
 import com.example.cbs_mvp.entity.Order;
+import com.example.cbs_mvp.repo.OrderRepository;
 import com.example.cbs_mvp.service.OrderImportService;
 import com.example.cbs_mvp.service.OrderService;
 
@@ -22,10 +28,23 @@ public class OrderController {
 
     private final OrderService service;
     private final OrderImportService importService;
+    private final OrderRepository orderRepo;
 
-    public OrderController(OrderService service, OrderImportService importService) {
+    public OrderController(OrderService service, OrderImportService importService, OrderRepository orderRepo) {
         this.service = service;
         this.importService = importService;
+        this.orderRepo = orderRepo;
+    }
+
+    /**
+     * Order一覧取得（直近50件）
+     */
+    @GetMapping
+    public ResponseEntity<List<Order>> list(
+            @RequestParam(value = "limit", defaultValue = "50") int limit) {
+        var pageable = PageRequest.of(0, Math.min(limit, 100), Sort.by(Sort.Direction.DESC, "orderId"));
+        var orders = orderRepo.findAll(pageable).getContent();
+        return ResponseEntity.ok(orders);
     }
 
     @PostMapping("/{orderId}/mark-delivered")
@@ -91,14 +110,12 @@ public class OrderController {
                     req.ebayOrderKey,
                     req.draftId,
                     req.soldPriceUsd,
-                    req.fxRate
-            ));
+                    req.fxRate));
             return ResponseEntity.ok(Map.of(
                     "orderId", result.order().getOrderId(),
                     "state", result.order().getState(),
                     "ebayOrderKey", result.order().getEbayOrderKey(),
-                    "idempotent", result.idempotent()
-            ));
+                    "idempotent", result.idempotent()));
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         } catch (IllegalStateException ex) {

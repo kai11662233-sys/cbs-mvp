@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,7 +20,11 @@
             --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -63,7 +68,8 @@
             transition: all 0.2s;
         }
 
-        .nav-link:hover, .nav-link.active {
+        .nav-link:hover,
+        .nav-link.active {
             background: var(--bg-card);
             color: var(--text-primary);
         }
@@ -76,20 +82,50 @@
         }
 
         /* コンテナ */
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
 
         /* カード */
-        .grid { display: grid; gap: 1.5rem; }
-        .grid-2 { grid-template-columns: repeat(2, 1fr); }
-        .grid-3 { grid-template-columns: repeat(3, 1fr); }
-        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
 
         @media (max-width: 1024px) {
-            .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+
+            .grid-4,
+            .grid-3 {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
+
         @media (max-width: 640px) {
-            .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
-            .nav { flex-wrap: wrap; gap: 1rem; }
+
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                flex-wrap: wrap;
+                gap: 1rem;
+            }
         }
 
         .card {
@@ -124,9 +160,17 @@
             font-weight: 700;
         }
 
-        .card-value.success { color: var(--success); }
-        .card-value.warning { color: var(--warning); }
-        .card-value.danger { color: var(--danger); }
+        .card-value.success {
+            color: var(--success);
+        }
+
+        .card-value.warning {
+            color: var(--warning);
+        }
+
+        .card-value.danger {
+            color: var(--danger);
+        }
 
         .stat-icon {
             width: 48px;
@@ -138,10 +182,21 @@
             font-size: 1.5rem;
         }
 
-        .stat-icon.blue { background: rgba(59, 130, 246, 0.2); }
-        .stat-icon.green { background: rgba(34, 197, 94, 0.2); }
-        .stat-icon.yellow { background: rgba(245, 158, 11, 0.2); }
-        .stat-icon.red { background: rgba(239, 68, 68, 0.2); }
+        .stat-icon.blue {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        .stat-icon.green {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .stat-icon.yellow {
+            background: rgba(245, 158, 11, 0.2);
+        }
+
+        .stat-icon.red {
+            background: rgba(239, 68, 68, 0.2);
+        }
 
         .section-title {
             font-size: 1.25rem;
@@ -163,8 +218,15 @@
             font-weight: 500;
         }
 
-        .status-badge.running { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        .status-badge.paused { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .status-badge.running {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .status-badge.paused {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
 
         .status-badge::before {
             content: '';
@@ -176,14 +238,36 @@
         }
 
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
         }
 
         /* テーブル */
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--bg-card); }
-        th { color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-card);
+        }
+
+        th {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
 
         .badge {
             display: inline-block;
@@ -193,10 +277,25 @@
             font-weight: 500;
         }
 
-        .badge.success { background: rgba(34, 197, 94, 0.2); color: var(--success); }
-        .badge.warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
-        .badge.danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
-        .badge.info { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
+        .badge.success {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .badge.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+        }
+
+        .badge.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .badge.info {
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+        }
 
         /* ボタン */
         .btn {
@@ -209,21 +308,45 @@
             font-size: 0.875rem;
         }
 
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
         .btn-outline {
             background: transparent;
             border: 1px solid var(--bg-card);
             color: var(--text-primary);
         }
-        .btn-outline:hover { background: var(--bg-card); }
 
-        .btn-sm { padding: 0.5rem 1rem; font-size: 0.75rem; }
+        .btn-outline:hover {
+            background: var(--bg-card);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+        }
 
         /* フォーム */
-        input, select, textarea {
+        input,
+        select,
+        textarea {
             width: 100%;
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
@@ -234,7 +357,9 @@
             font-size: 0.875rem;
         }
 
-        input:focus, select:focus, textarea:focus {
+        input:focus,
+        select:focus,
+        textarea:focus {
             outline: none;
             border-color: var(--accent);
         }
@@ -256,20 +381,49 @@
             transition: border-color 0.2s;
         }
 
-        .file-upload:hover { border-color: var(--accent); }
-        .file-upload.dragover { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        .file-upload:hover {
+            border-color: var(--accent);
+        }
+
+        .file-upload.dragover {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.1);
+        }
 
         /* ページ表示制御 */
-        .page { display: none; }
-        .page.active { display: block; }
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
 
         /* ログインフォーム */
-        .login-form { max-width: 400px; margin: 4rem auto; }
-        .error-msg { color: var(--danger); margin-bottom: 1rem; display: none; }
-        .success-msg { color: var(--success); margin-bottom: 1rem; display: none; }
+        .login-form {
+            max-width: 400px;
+            margin: 4rem auto;
+        }
 
-        #app { display: none; }
-        #login { display: block; }
+        .error-msg {
+            color: var(--danger);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-msg {
+            color: var(--success);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        #app {
+            display: none;
+        }
+
+        #login {
+            display: block;
+        }
 
         /* ツールチップ */
         .tooltip {
@@ -292,12 +446,32 @@
             transition: opacity 0.2s;
         }
 
-        .tooltip:hover::after { opacity: 1; }
+        .tooltip:hover::after {
+            opacity: 1;
+        }
 
         /* ローディング */
-        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
-        .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-secondary);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
 
         /* アラート */
         .alert {
@@ -305,12 +479,29 @@
             border-radius: 0.5rem;
             margin-bottom: 1rem;
         }
-        .alert-success { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); }
-        .alert-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); }
-        .alert-warning { background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--success);
+        }
+
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid var(--danger);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 1px solid var(--warning);
+        }
 
         /* タブ */
-        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
         .tab {
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
@@ -318,10 +509,18 @@
             transition: all 0.2s;
             border: 1px solid var(--bg-card);
         }
-        .tab:hover { background: var(--bg-card); }
-        .tab.active { background: var(--accent); border-color: var(--accent); }
+
+        .tab:hover {
+            background: var(--bg-card);
+        }
+
+        .tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
     </style>
 </head>
+
 <body>
     <!-- ログイン画面 -->
     <div id="login" class="container">
@@ -406,7 +605,7 @@
             <!-- Candidateページ -->
             <div id="page-candidates" class="page">
                 <h2 class="section-title">📦 Candidate管理</h2>
-                
+
                 <div class="card" style="margin-bottom: 1.5rem;">
                     <h3 style="margin-bottom: 1rem;">CSVインポート</h3>
                     <div class="file-upload" id="csvDropzone" onclick="document.getElementById('csvFile').click()">
@@ -415,8 +614,9 @@
                             形式: sourceUrl, sourcePriceYen, weightKg, sizeTier
                         </p>
                     </div>
-                    <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleCsvSelect(event)">
-                    
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;"
+                        onchange="handleCsvSelect(event)">
+
                     <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
                         <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
                             <input type="checkbox" id="skipDuplicates" style="width: auto; margin: 0;">
@@ -425,12 +625,13 @@
                         <button class="btn btn-outline btn-sm" onclick="previewCsv()">プレビュー</button>
                         <button class="btn btn-primary btn-sm" onclick="importCsv()">インポート</button>
                     </div>
-                    
+
                     <div id="csvResult" style="margin-top: 1rem;"></div>
                 </div>
 
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3>Candidate一覧</h3>
                         <button class="btn btn-outline btn-sm" onclick="loadCandidates()">🔄 更新</button>
                     </div>
@@ -445,7 +646,9 @@
                             </tr>
                         </thead>
                         <tbody id="candidatesTable">
-                            <tr><td colspan="5" class="loading">読み込み中...</td></tr>
+                            <tr>
+                                <td colspan="5" class="loading">読み込み中...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -454,9 +657,10 @@
             <!-- Ordersページ -->
             <div id="page-orders" class="page">
                 <h2 class="section-title">🛒 Order管理</h2>
-                
+
                 <div class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3>Order一覧</h3>
                         <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 更新</button>
                     </div>
@@ -471,7 +675,9 @@
                             </tr>
                         </thead>
                         <tbody id="ordersTable">
-                            <tr><td colspan="5" class="loading">読み込み中...</td></tr>
+                            <tr>
+                                <td colspan="5" class="loading">読み込み中...</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -480,16 +686,16 @@
             <!-- 価格計算ページ -->
             <div id="page-pricing" class="page">
                 <h2 class="section-title">💰 価格計算機</h2>
-                
+
                 <div class="grid grid-2">
                     <div class="card">
                         <h3 style="margin-bottom: 1rem;">価格シミュレーション</h3>
                         <label>仕入価格 (円)</label>
                         <input type="number" id="calcSourcePrice" placeholder="5000">
-                        
+
                         <label>重量 (kg)</label>
                         <input type="number" id="calcWeight" placeholder="1.5" step="0.1">
-                        
+
                         <label>サイズ</label>
                         <select id="calcSize">
                             <option value="S">S</option>
@@ -498,10 +704,10 @@
                             <option value="XL">XL</option>
                             <option value="XXL">XXL</option>
                         </select>
-                        
+
                         <button class="btn btn-primary" onclick="calculatePrice()">計算する</button>
                     </div>
-                    
+
                     <div class="card">
                         <h3 style="margin-bottom: 1rem;">計算結果</h3>
                         <div id="pricingResult">
@@ -514,7 +720,7 @@
             <!-- 為替ページ -->
             <div id="page-fx" class="page">
                 <h2 class="section-title">💱 為替レート管理</h2>
-                
+
                 <div class="grid grid-2">
                     <div class="card">
                         <h3 style="margin-bottom: 1rem;">現在のレート</h3>
@@ -526,7 +732,7 @@
                             🔄 レート更新
                         </button>
                     </div>
-                    
+
                     <div class="card">
                         <h3 style="margin-bottom: 1rem;">ステータス</h3>
                         <div id="fxStatus">
@@ -555,7 +761,7 @@
                 link.classList.add('active');
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
                 document.getElementById('page-' + page).classList.add('active');
-                
+
                 // ページ固有の読み込み
                 if (page === 'candidates') loadCandidates();
                 if (page === 'orders') loadOrders();
@@ -630,7 +836,7 @@
                     document.getElementById('sales30d').textContent = formatYen(summary.sales30dYen);
                     document.getElementById('openCommitments').textContent = formatYen(summary.openCommitmentsYen);
                     document.getElementById('draftFailed').textContent = summary.draftFailedLast10 || 0;
-                    
+
                     const statusEl = document.getElementById('systemStatus');
                     if (summary.paused) {
                         statusEl.className = 'status-badge paused';
@@ -663,7 +869,7 @@
         async function loadCandidates() {
             const tbody = document.getElementById('candidatesTable');
             tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
-            
+
             try {
                 const data = await api('/candidates');
                 if (data && Array.isArray(data)) {
@@ -690,7 +896,7 @@
         async function loadOrders() {
             const tbody = document.getElementById('ordersTable');
             tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
-            
+
             try {
                 const data = await api('/orders');
                 if (data && Array.isArray(data)) {
@@ -738,12 +944,12 @@
 
         async function previewCsv() {
             if (!selectedFile) { alert('ファイルを選択してください'); return; }
-            
+
             const formData = new FormData();
             formData.append('file', selectedFile);
-            
+
             document.getElementById('csvResult').innerHTML = '<span class="spinner"></span> プレビュー中...';
-            
+
             try {
                 const res = await fetch('/candidates/import-csv/preview', {
                     method: 'POST',
@@ -751,21 +957,21 @@
                     body: formData
                 });
                 const data = await res.json();
-                
+
                 let html = `
                     <div class="alert ${data.canImport ? 'alert-success' : 'alert-warning'}">
                         <strong>${data.message}</strong><br>
                         有効行: ${data.validRows} / ${data.totalRows}
                     </div>
                 `;
-                
+
                 if (data.errors && data.errors.length > 0) {
                     html += '<div style="max-height: 200px; overflow-y: auto; font-size: 0.75rem; color: var(--danger);">';
                     html += data.errors.slice(0, 10).map(e => `<div>• ${e}</div>`).join('');
                     if (data.errors.length > 10) html += `<div>... 他 ${data.errors.length - 10} 件</div>`;
                     html += '</div>';
                 }
-                
+
                 document.getElementById('csvResult').innerHTML = html;
             } catch (e) {
                 document.getElementById('csvResult').innerHTML = `<div class="alert alert-danger">エラー: ${e.message}</div>`;
@@ -774,13 +980,13 @@
 
         async function importCsv() {
             if (!selectedFile) { alert('ファイルを選択してください'); return; }
-            
+
             const skipDuplicates = document.getElementById('skipDuplicates').checked;
             const formData = new FormData();
             formData.append('file', selectedFile);
-            
+
             document.getElementById('csvResult').innerHTML = '<span class="spinner"></span> インポート中...';
-            
+
             try {
                 const res = await fetch(`/candidates/import-csv?skipDuplicates=${skipDuplicates}`, {
                     method: 'POST',
@@ -788,7 +994,7 @@
                     body: formData
                 });
                 const data = await res.json();
-                
+
                 let html = `
                     <div class="alert ${data.errorCount > 0 ? 'alert-warning' : 'alert-success'}">
                         <strong>${data.message}</strong><br>
@@ -797,7 +1003,7 @@
                         ${data.errorCount > 0 ? `/ エラー: ${data.errorCount} 件` : ''}
                     </div>
                 `;
-                
+
                 document.getElementById('csvResult').innerHTML = html;
                 loadCandidates();
             } catch (e) {
@@ -810,12 +1016,19 @@
             const sourcePrice = document.getElementById('calcSourcePrice').value;
             const weight = document.getElementById('calcWeight').value;
             const size = document.getElementById('calcSize').value;
-            
+
             if (!sourcePrice) { alert('仕入価格を入力してください'); return; }
-            
+
             document.getElementById('pricingResult').innerHTML = '<span class="spinner"></span> 計算中...';
-            
+
             try {
+                // まずFXレートを取得
+                const fxRes = await api('/fx/rate');
+                if (!fxRes || !fxRes.rate) {
+                    document.getElementById('pricingResult').innerHTML = `<div class="alert alert-danger">FXレートが取得できません</div>`;
+                    return;
+                }
+
                 const res = await fetch('/pricing/calc', {
                     method: 'POST',
                     headers: {
@@ -825,24 +1038,30 @@
                     body: JSON.stringify({
                         sourcePriceYen: parseFloat(sourcePrice),
                         weightKg: weight ? parseFloat(weight) : null,
-                        sizeTier: size
+                        sizeTier: size,
+                        fxRate: fxRes.rate
                     })
                 });
                 const data = await res.json();
-                
+
                 if (data.error) {
                     document.getElementById('pricingResult').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
                 } else {
+                    // PricingResponseフィールド: recSellUsd, useSellUsd, intlShipCostYen, totalCostYen, profitRate, gateProfitOk
+                    const sellUsd = data.useSellUsd || data.recSellUsd || 0;
+                    const profitRatePct = (data.profitRate || 0) * 100;
                     document.getElementById('pricingResult').innerHTML = `
                         <div style="font-size: 2rem; font-weight: 700; color: var(--success); margin-bottom: 1rem;">
-                            $${(data.offerPriceUsd || 0).toFixed(2)}
+                            $${sellUsd.toFixed(2)}
                         </div>
                         <table style="font-size: 0.875rem;">
-                            <tr><td style="color: var(--text-secondary);">仕入価格</td><td>${formatYen(data.sourcePriceYen)}</td></tr>
-                            <tr><td style="color: var(--text-secondary);">送料</td><td>${formatYen(data.shippingCostYen)}</td></tr>
+                            <tr><td style="color: var(--text-secondary);">仕入価格</td><td>${formatYen(parseFloat(sourcePrice))}</td></tr>
+                            <tr><td style="color: var(--text-secondary);">国際送料</td><td>${formatYen(data.intlShipCostYen)}</td></tr>
                             <tr><td style="color: var(--text-secondary);">コスト合計</td><td>${formatYen(data.totalCostYen)}</td></tr>
-                            <tr><td style="color: var(--text-secondary);">利益率</td><td>${((data.marginPercent || 0)).toFixed(1)}%</td></tr>
+                            <tr><td style="color: var(--text-secondary);">利益率</td><td class="${data.gateProfitOk ? 'success' : 'danger'}">${profitRatePct.toFixed(1)}%</td></tr>
+                            <tr><td style="color: var(--text-secondary);">利益ゲート</td><td class="${data.gateProfitOk ? 'badge success' : 'badge danger'}">${data.gateProfitOk ? 'OK' : 'NG'}</td></tr>
                         </table>
+                        ${data.warn ? `<div class="alert alert-warning" style="margin-top: 1rem;">${data.warn}</div>` : ''}
                     `;
                 }
             } catch (e) {
@@ -907,4 +1126,5 @@
         setInterval(loadDashboard, 60000);
     </script>
 </body>
+
 </html>
