@@ -182,6 +182,9 @@ public class EbayWebhookController {
      * 定数時間比較（タイミング攻撃対策）
      */
     private boolean constantTimeEquals(String a, String b) {
+        if (a == null || b == null) {
+            return false;
+        }
         byte[] aBytes = a.getBytes(StandardCharsets.UTF_8);
         byte[] bBytes = b.getBytes(StandardCharsets.UTF_8);
         return java.security.MessageDigest.isEqual(aBytes, bBytes);
