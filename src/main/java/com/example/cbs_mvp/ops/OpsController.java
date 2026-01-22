@@ -94,14 +94,19 @@ public class OpsController {
      */
     @GetMapping("/summary")
     public ResponseEntity<?> summary(
-            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
-            @RequestHeader(value = "Authorization", required = false) String authHeader) {
+            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey) {
 
-        // OPS-KEY または JWT認証をチェック
+        // OPS-KEY または SecurityContextの認証状態をチェック
         boolean isOpsKeyValid = opsKeyService.isValid(opsKey);
-        boolean isJwtValid = authHeader != null && authHeader.startsWith("Bearer ");
+        boolean isAuthenticated = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication() != null
+                && org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication().isAuthenticated()
+                && !(org.springframework.security.core.context.SecurityContextHolder
+                        .getContext()
+                        .getAuthentication() instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
 
-        if (!isOpsKeyValid && !isJwtValid) {
+        if (!isOpsKeyValid && !isAuthenticated) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("error", "X-OPS-KEY or JWT required"));
         }

@@ -906,8 +906,8 @@
                         tbody.innerHTML = data.slice(0, 20).map(o => `
                             <tr>
                                 <td>${o.orderId}</td>
-                                <td>${o.ebayOrderId || '--'}</td>
-                                <td>$${(o.salePriceUsd || 0).toFixed(2)}</td>
+                                <td>${o.ebayOrderKey || '--'}</td>
+                                <td>$${(o.soldPriceUsd || 0).toFixed(2)}</td>
                                 <td><span class="badge ${getStateBadge(o.state)}">${o.state}</span></td>
                                 <td>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ja-JP') : '--'}</td>
                             </tr>
