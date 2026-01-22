@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CBS-MVP Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-primary: #0f172a;
@@ -16,14 +17,9 @@
             --warning: #f59e0b;
             --danger: #ef4444;
             --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -32,79 +28,68 @@
             min-height: 100vh;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        header {
+        /* ナビゲーション */
+        .nav {
+            background: var(--bg-secondary);
+            padding: 0.75rem 2rem;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
+            gap: 2rem;
             border-bottom: 1px solid var(--bg-card);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo {
-            font-size: 1.5rem;
+        .nav-logo {
+            font-size: 1.25rem;
             font-weight: 700;
             background: var(--gradient-1);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
+        .nav-links {
+            display: flex;
             gap: 0.5rem;
+        }
+
+        .nav-link {
             padding: 0.5rem 1rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 500;
+            border-radius: 0.5rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .status-badge.running {
-            background: rgba(34, 197, 94, 0.2);
-            color: var(--success);
+        .nav-link:hover, .nav-link.active {
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
 
-        .status-badge.paused {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
+        .nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
-        .status-badge::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: currentColor;
-            animation: pulse 2s infinite;
-        }
+        /* コンテナ */
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .grid {
-            display: grid;
-            gap: 1.5rem;
-        }
-
+        /* カード */
+        .grid { display: grid; gap: 1.5rem; }
         .grid-2 { grid-template-columns: repeat(2, 1fr); }
         .grid-3 { grid-template-columns: repeat(3, 1fr); }
         .grid-4 { grid-template-columns: repeat(4, 1fr); }
 
         @media (max-width: 1024px) {
-            .grid-4 { grid-template-columns: repeat(2, 1fr); }
-            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
         }
-
         @media (max-width: 640px) {
             .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+            .nav { flex-wrap: wrap; gap: 1rem; }
         }
 
         .card {
@@ -162,25 +147,43 @@
             font-size: 1.25rem;
             font-weight: 600;
             margin: 2rem 0 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
+        /* ステータスバッジ */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
         }
 
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--bg-card);
+        .status-badge.running { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .status-badge.paused { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        .status-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
         }
 
-        th {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
+
+        /* テーブル */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--bg-card); }
+        th { color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
 
         .badge {
             display: inline-block;
@@ -195,6 +198,7 @@
         .badge.danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
         .badge.info { background: rgba(59, 130, 246, 0.2); color: var(--accent); }
 
+        /* ボタン */
         .btn {
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
@@ -202,29 +206,24 @@
             font-weight: 500;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 0.875rem;
         }
 
-        .btn-primary {
-            background: var(--accent);
-            color: white;
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--bg-card);
+            color: var(--text-primary);
         }
+        .btn-outline:hover { background: var(--bg-card); }
 
-        .btn-primary:hover {
-            background: #2563eb;
-            transform: translateY(-1px);
-        }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.75rem; }
 
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
-        .login-form {
-            max-width: 400px;
-            margin: 4rem auto;
-        }
-
-        .login-form input {
+        /* フォーム */
+        input, select, textarea {
             width: 100%;
             padding: 0.75rem 1rem;
             margin-bottom: 1rem;
@@ -232,138 +231,339 @@
             border-radius: 0.5rem;
             background: var(--bg-secondary);
             color: var(--text-primary);
+            font-size: 0.875rem;
         }
 
-        .login-form input:focus {
+        input:focus, select:focus, textarea:focus {
             outline: none;
             border-color: var(--accent);
         }
 
-        .error-msg {
-            color: var(--danger);
-            margin-bottom: 1rem;
-            display: none;
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
         }
 
-        .loading {
-            text-align: center;
+        /* ファイルアップロード */
+        .file-upload {
+            border: 2px dashed var(--bg-card);
+            border-radius: 0.5rem;
             padding: 2rem;
-            color: var(--text-secondary);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s;
         }
+
+        .file-upload:hover { border-color: var(--accent); }
+        .file-upload.dragover { border-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+
+        /* ページ表示制御 */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ログインフォーム */
+        .login-form { max-width: 400px; margin: 4rem auto; }
+        .error-msg { color: var(--danger); margin-bottom: 1rem; display: none; }
+        .success-msg { color: var(--success); margin-bottom: 1rem; display: none; }
 
         #app { display: none; }
         #login { display: block; }
+
+        /* ツールチップ */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .tooltip:hover::after { opacity: 1; }
+
+        /* ローディング */
+        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+        .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--text-secondary); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* アラート */
+        .alert {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .alert-success { background: rgba(34, 197, 94, 0.2); border: 1px solid var(--success); }
+        .alert-danger { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); }
+        .alert-warning { background: rgba(245, 158, 11, 0.2); border: 1px solid var(--warning); }
+
+        /* タブ */
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tab {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--bg-card);
+        }
+        .tab:hover { background: var(--bg-card); }
+        .tab.active { background: var(--accent); border-color: var(--accent); }
     </style>
 </head>
 <body>
+    <!-- ログイン画面 -->
     <div id="login" class="container">
         <div class="login-form card">
             <h2 style="margin-bottom: 1.5rem; text-align: center;">CBS-MVP ログイン</h2>
             <div id="loginError" class="error-msg"></div>
             <input type="text" id="username" placeholder="ユーザー名" value="admin">
-            <input type="password" id="password" placeholder="パスワード" value="admin">
+            <input type="password" id="password" placeholder="パスワード">
             <button class="btn btn-primary" style="width: 100%;" onclick="login()">ログイン</button>
         </div>
     </div>
 
-    <div id="app" class="container">
-        <header>
-            <div class="logo">CBS-MVP Dashboard</div>
-            <div>
-                <span id="systemStatus" class="status-badge running">システム稼働中</span>
-                <button class="btn btn-danger" onclick="logout()" style="margin-left: 1rem;">ログアウト</button>
+    <!-- アプリ本体 -->
+    <div id="app">
+        <!-- ナビゲーション -->
+        <nav class="nav">
+            <div class="nav-logo">CBS-MVP</div>
+            <div class="nav-links">
+                <span class="nav-link active" data-page="dashboard">📊 ダッシュボード</span>
+                <span class="nav-link" data-page="candidates">📦 Candidate</span>
+                <span class="nav-link" data-page="orders">🛒 Orders</span>
+                <span class="nav-link" data-page="pricing">💰 価格計算</span>
+                <span class="nav-link" data-page="fx">💱 為替</span>
             </div>
-        </header>
+            <div class="nav-right">
+                <span id="systemStatus" class="status-badge running">稼働中</span>
+                <button class="btn btn-outline btn-sm" onclick="logout()">ログアウト</button>
+            </div>
+        </nav>
 
-        <div class="grid grid-4">
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">30日売上</span>
-                    <div class="stat-icon blue">💰</div>
+        <div class="container">
+            <!-- ダッシュボードページ -->
+            <div id="page-dashboard" class="page active">
+                <div class="grid grid-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">30日売上</span>
+                            <div class="stat-icon blue">💰</div>
+                        </div>
+                        <div class="card-value" id="sales30d">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">未決済コミット</span>
+                            <div class="stat-icon yellow">📦</div>
+                        </div>
+                        <div class="card-value" id="openCommitments">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Draft失敗(直近10)</span>
+                            <div class="stat-icon red">⚠️</div>
+                        </div>
+                        <div class="card-value" id="draftFailed">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">現在為替</span>
+                            <div class="stat-icon green">💱</div>
+                        </div>
+                        <div class="card-value" id="fxRate">--</div>
+                    </div>
                 </div>
-                <div class="card-value" id="sales30d">--</div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">未決済コミット</span>
-                    <div class="stat-icon yellow">📦</div>
-                </div>
-                <div class="card-value" id="openCommitments">--</div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">Draft失敗(直近10)</span>
-                    <div class="stat-icon red">⚠️</div>
-                </div>
-                <div class="card-value" id="draftFailed">--</div>
-            </div>
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">現在為替</span>
-                    <div class="stat-icon green">💱</div>
-                </div>
-                <div class="card-value" id="fxRate">--</div>
-            </div>
-        </div>
 
-        <h2 class="section-title">Cash Gate ステータス</h2>
-        <div class="grid grid-3">
-            <div class="card">
-                <div class="card-title">現金残高</div>
-                <div class="card-value success" id="currentCash">--</div>
+                <h2 class="section-title">💵 Cash Gate ステータス</h2>
+                <div class="grid grid-3">
+                    <div class="card">
+                        <div class="card-title">現金残高</div>
+                        <div class="card-value success" id="currentCash">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">返金引当</div>
+                        <div class="card-value warning" id="refundReserve">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">利用可能WC</div>
+                        <div class="card-value" id="wcAvailable">--</div>
+                    </div>
+                </div>
             </div>
-            <div class="card">
-                <div class="card-title">返金引当</div>
-                <div class="card-value warning" id="refundReserve">--</div>
-            </div>
-            <div class="card">
-                <div class="card-title">利用可能WC</div>
-                <div class="card-value" id="wcAvailable">--</div>
-            </div>
-        </div>
 
-        <h2 class="section-title">直近のCandidate</h2>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>URL</th>
-                        <th>仕入価格</th>
-                        <th>状態</th>
-                    </tr>
-                </thead>
-                <tbody id="candidatesTable">
-                    <tr><td colspan="4" class="loading">読み込み中...</td></tr>
-                </tbody>
-            </table>
-        </div>
+            <!-- Candidateページ -->
+            <div id="page-candidates" class="page">
+                <h2 class="section-title">📦 Candidate管理</h2>
+                
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">CSVインポート</h3>
+                    <div class="file-upload" id="csvDropzone" onclick="document.getElementById('csvFile').click()">
+                        <p>📁 CSVファイルをドラッグ＆ドロップ または クリックして選択</p>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                            形式: sourceUrl, sourcePriceYen, weightKg, sizeTier
+                        </p>
+                    </div>
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleCsvSelect(event)">
+                    
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+                        <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <input type="checkbox" id="skipDuplicates" style="width: auto; margin: 0;">
+                            重複URLをスキップ
+                        </label>
+                        <button class="btn btn-outline btn-sm" onclick="previewCsv()">プレビュー</button>
+                        <button class="btn btn-primary btn-sm" onclick="importCsv()">インポート</button>
+                    </div>
+                    
+                    <div id="csvResult" style="margin-top: 1rem;"></div>
+                </div>
 
-        <h2 class="section-title">直近のOrder</h2>
-        <div class="card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>eBay Order</th>
-                        <th>売上</th>
-                        <th>状態</th>
-                    </tr>
-                </thead>
-                <tbody id="ordersTable">
-                    <tr><td colspan="4" class="loading">読み込み中...</td></tr>
-                </tbody>
-            </table>
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>Candidate一覧</h3>
+                        <button class="btn btn-outline btn-sm" onclick="loadCandidates()">🔄 更新</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>URL</th>
+                                <th>仕入価格</th>
+                                <th>サイズ</th>
+                                <th>状態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidatesTable">
+                            <tr><td colspan="5" class="loading">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ordersページ -->
+            <div id="page-orders" class="page">
+                <h2 class="section-title">🛒 Order管理</h2>
+                
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3>Order一覧</h3>
+                        <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 更新</button>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>eBay Order</th>
+                                <th>売上(USD)</th>
+                                <th>状態</th>
+                                <th>作成日</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTable">
+                            <tr><td colspan="5" class="loading">読み込み中...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 価格計算ページ -->
+            <div id="page-pricing" class="page">
+                <h2 class="section-title">💰 価格計算機</h2>
+                
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;">価格シミュレーション</h3>
+                        <label>仕入価格 (円)</label>
+                        <input type="number" id="calcSourcePrice" placeholder="5000">
+                        
+                        <label>重量 (kg)</label>
+                        <input type="number" id="calcWeight" placeholder="1.5" step="0.1">
+                        
+                        <label>サイズ</label>
+                        <select id="calcSize">
+                            <option value="S">S</option>
+                            <option value="M" selected>M</option>
+                            <option value="L">L</option>
+                            <option value="XL">XL</option>
+                            <option value="XXL">XXL</option>
+                        </select>
+                        
+                        <button class="btn btn-primary" onclick="calculatePrice()">計算する</button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;">計算結果</h3>
+                        <div id="pricingResult">
+                            <p style="color: var(--text-secondary);">左のフォームで計算してください</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 為替ページ -->
+            <div id="page-fx" class="page">
+                <h2 class="section-title">💱 為替レート管理</h2>
+                
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;">現在のレート</h3>
+                        <div class="card-value" id="fxRateLarge">--</div>
+                        <p style="color: var(--text-secondary); margin-top: 0.5rem;">
+                            最終更新: <span id="fxUpdatedAt">--</span>
+                        </p>
+                        <button class="btn btn-primary" style="margin-top: 1rem;" onclick="refreshFxRate()">
+                            🔄 レート更新
+                        </button>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;">ステータス</h3>
+                        <div id="fxStatus">
+                            <p>APIからレートを取得中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         let token = localStorage.getItem('token');
+        let selectedFile = null;
 
+        // 初期化
         if (token) {
             showApp();
         }
 
+        // ナビゲーション
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                const page = link.dataset.page;
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                document.getElementById('page-' + page).classList.add('active');
+                
+                // ページ固有の読み込み
+                if (page === 'candidates') loadCandidates();
+                if (page === 'orders') loadOrders();
+                if (page === 'fx') loadFxDetails();
+            });
+        });
+
+        // ログイン
         async function login() {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
@@ -405,9 +605,14 @@
             loadDashboard();
         }
 
-        async function api(path) {
+        // API呼び出し
+        async function api(path, options = {}) {
             const res = await fetch(path, {
-                headers: { 'Authorization': 'Bearer ' + token }
+                ...options,
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    ...options.headers
+                }
             });
             if (res.status === 401) {
                 logout();
@@ -416,6 +621,7 @@
             return res.json();
         }
 
+        // ダッシュボード読み込み
         async function loadDashboard() {
             try {
                 // Ops Summary
@@ -428,7 +634,10 @@
                     const statusEl = document.getElementById('systemStatus');
                     if (summary.paused) {
                         statusEl.className = 'status-badge paused';
-                        statusEl.textContent = 'システム停止中';
+                        statusEl.textContent = '停止中';
+                    } else {
+                        statusEl.className = 'status-badge running';
+                        statusEl.textContent = '稼働中';
                     }
                 }
 
@@ -445,33 +654,257 @@
                 if (fx && fx.rate) {
                     document.getElementById('fxRate').textContent = '¥' + fx.rate.toFixed(2);
                 }
-
-                // Candidates (mock - API未実装の場合)
-                document.getElementById('candidatesTable').innerHTML = `
-                    <tr><td colspan="4" style="color: var(--text-secondary);">
-                        /candidates エンドポイントで取得可能
-                    </td></tr>
-                `;
-
-                // Orders (mock)
-                document.getElementById('ordersTable').innerHTML = `
-                    <tr><td colspan="4" style="color: var(--text-secondary);">
-                        /orders エンドポイントで取得可能
-                    </td></tr>
-                `;
-
             } catch (e) {
                 console.error('Dashboard load error:', e);
             }
         }
 
+        // Candidate読み込み
+        async function loadCandidates() {
+            const tbody = document.getElementById('candidatesTable');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
+            
+            try {
+                const data = await api('/candidates');
+                if (data && Array.isArray(data)) {
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-secondary);">データがありません</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.slice(0, 20).map(c => `
+                            <tr>
+                                <td>${c.candidateId}</td>
+                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.sourceUrl || '--'}</td>
+                                <td>${formatYen(c.sourcePriceYen)}</td>
+                                <td>${c.sizeTier || '--'}</td>
+                                <td><span class="badge ${getStateBadge(c.state)}">${c.state}</span></td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" style="color: var(--danger);">読み込みエラー</td></tr>';
+            }
+        }
+
+        // Order読み込み
+        async function loadOrders() {
+            const tbody = document.getElementById('ordersTable');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
+            
+            try {
+                const data = await api('/orders');
+                if (data && Array.isArray(data)) {
+                    if (data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-secondary);">データがありません</td></tr>';
+                    } else {
+                        tbody.innerHTML = data.slice(0, 20).map(o => `
+                            <tr>
+                                <td>${o.orderId}</td>
+                                <td>${o.ebayOrderId || '--'}</td>
+                                <td>$${(o.salePriceUsd || 0).toFixed(2)}</td>
+                                <td><span class="badge ${getStateBadge(o.state)}">${o.state}</span></td>
+                                <td>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ja-JP') : '--'}</td>
+                            </tr>
+                        `).join('');
+                    }
+                }
+            } catch (e) {
+                tbody.innerHTML = '<tr><td colspan="5" style="color: var(--danger);">読み込みエラー</td></tr>';
+            }
+        }
+
+        // CSV処理
+        const dropzone = document.getElementById('csvDropzone');
+        if (dropzone) {
+            dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+            dropzone.addEventListener('drop', e => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    selectedFile = e.dataTransfer.files[0];
+                    document.getElementById('csvFile').files = e.dataTransfer.files;
+                    dropzone.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
+                }
+            });
+        }
+
+        function handleCsvSelect(event) {
+            selectedFile = event.target.files[0];
+            if (selectedFile) {
+                document.getElementById('csvDropzone').innerHTML = `<p>📄 ${selectedFile.name}</p>`;
+            }
+        }
+
+        async function previewCsv() {
+            if (!selectedFile) { alert('ファイルを選択してください'); return; }
+            
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            document.getElementById('csvResult').innerHTML = '<span class="spinner"></span> プレビュー中...';
+            
+            try {
+                const res = await fetch('/candidates/import-csv/preview', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                
+                let html = `
+                    <div class="alert ${data.canImport ? 'alert-success' : 'alert-warning'}">
+                        <strong>${data.message}</strong><br>
+                        有効行: ${data.validRows} / ${data.totalRows}
+                    </div>
+                `;
+                
+                if (data.errors && data.errors.length > 0) {
+                    html += '<div style="max-height: 200px; overflow-y: auto; font-size: 0.75rem; color: var(--danger);">';
+                    html += data.errors.slice(0, 10).map(e => `<div>• ${e}</div>`).join('');
+                    if (data.errors.length > 10) html += `<div>... 他 ${data.errors.length - 10} 件</div>`;
+                    html += '</div>';
+                }
+                
+                document.getElementById('csvResult').innerHTML = html;
+            } catch (e) {
+                document.getElementById('csvResult').innerHTML = `<div class="alert alert-danger">エラー: ${e.message}</div>`;
+            }
+        }
+
+        async function importCsv() {
+            if (!selectedFile) { alert('ファイルを選択してください'); return; }
+            
+            const skipDuplicates = document.getElementById('skipDuplicates').checked;
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            document.getElementById('csvResult').innerHTML = '<span class="spinner"></span> インポート中...';
+            
+            try {
+                const res = await fetch(`/candidates/import-csv?skipDuplicates=${skipDuplicates}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                
+                let html = `
+                    <div class="alert ${data.errorCount > 0 ? 'alert-warning' : 'alert-success'}">
+                        <strong>${data.message}</strong><br>
+                        成功: ${data.successCount} 件
+                        ${data.skippedCount > 0 ? `/ スキップ: ${data.skippedCount} 件` : ''}
+                        ${data.errorCount > 0 ? `/ エラー: ${data.errorCount} 件` : ''}
+                    </div>
+                `;
+                
+                document.getElementById('csvResult').innerHTML = html;
+                loadCandidates();
+            } catch (e) {
+                document.getElementById('csvResult').innerHTML = `<div class="alert alert-danger">エラー: ${e.message}</div>`;
+            }
+        }
+
+        // 価格計算
+        async function calculatePrice() {
+            const sourcePrice = document.getElementById('calcSourcePrice').value;
+            const weight = document.getElementById('calcWeight').value;
+            const size = document.getElementById('calcSize').value;
+            
+            if (!sourcePrice) { alert('仕入価格を入力してください'); return; }
+            
+            document.getElementById('pricingResult').innerHTML = '<span class="spinner"></span> 計算中...';
+            
+            try {
+                const res = await fetch('/pricing/calc', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sourcePriceYen: parseFloat(sourcePrice),
+                        weightKg: weight ? parseFloat(weight) : null,
+                        sizeTier: size
+                    })
+                });
+                const data = await res.json();
+                
+                if (data.error) {
+                    document.getElementById('pricingResult').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    document.getElementById('pricingResult').innerHTML = `
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--success); margin-bottom: 1rem;">
+                            $${(data.offerPriceUsd || 0).toFixed(2)}
+                        </div>
+                        <table style="font-size: 0.875rem;">
+                            <tr><td style="color: var(--text-secondary);">仕入価格</td><td>${formatYen(data.sourcePriceYen)}</td></tr>
+                            <tr><td style="color: var(--text-secondary);">送料</td><td>${formatYen(data.shippingCostYen)}</td></tr>
+                            <tr><td style="color: var(--text-secondary);">コスト合計</td><td>${formatYen(data.totalCostYen)}</td></tr>
+                            <tr><td style="color: var(--text-secondary);">利益率</td><td>${((data.marginPercent || 0)).toFixed(1)}%</td></tr>
+                        </table>
+                    `;
+                }
+            } catch (e) {
+                document.getElementById('pricingResult').innerHTML = `<div class="alert alert-danger">エラー: ${e.message}</div>`;
+            }
+        }
+
+        // FX詳細
+        async function loadFxDetails() {
+            try {
+                const fx = await api('/fx/rate');
+                if (fx) {
+                    if (fx.rate) {
+                        document.getElementById('fxRateLarge').textContent = '¥' + fx.rate.toFixed(2) + ' / $1';
+                    }
+                    if (fx.updatedAt) {
+                        document.getElementById('fxUpdatedAt').textContent = new Date(fx.updatedAt).toLocaleString('ja-JP');
+                    }
+                    document.getElementById('fxStatus').innerHTML = `<div class="alert alert-success">レート取得成功</div>`;
+                }
+            } catch (e) {
+                document.getElementById('fxStatus').innerHTML = `<div class="alert alert-danger">レート取得失敗</div>`;
+            }
+        }
+
+        async function refreshFxRate() {
+            document.getElementById('fxStatus').innerHTML = '<span class="spinner"></span> 更新中...';
+            try {
+                const res = await fetch('/fx/refresh', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.rate) {
+                    document.getElementById('fxRateLarge').textContent = '¥' + data.rate.toFixed(2) + ' / $1';
+                    document.getElementById('fxUpdatedAt').textContent = new Date().toLocaleString('ja-JP');
+                    document.getElementById('fxStatus').innerHTML = `<div class="alert alert-success">レート更新完了</div>`;
+                    document.getElementById('fxRate').textContent = '¥' + data.rate.toFixed(2);
+                } else {
+                    document.getElementById('fxStatus').innerHTML = `<div class="alert alert-danger">${data.error || '更新失敗'}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('fxStatus').innerHTML = `<div class="alert alert-danger">エラー: ${e.message}</div>`;
+            }
+        }
+
+        // ユーティリティ
         function formatYen(val) {
             if (val == null) return '--';
             return '¥' + Math.round(val).toLocaleString();
         }
 
-        // 30秒ごとに更新
-        setInterval(loadDashboard, 30000);
+        function getStateBadge(state) {
+            if (!state) return 'info';
+            if (state.includes('FAIL') || state.includes('ERROR')) return 'danger';
+            if (state.includes('PENDING') || state.includes('WAIT')) return 'warning';
+            if (state.includes('COMPLETE') || state.includes('DONE') || state === 'SOLD') return 'success';
+            return 'info';
+        }
+
+        // 定期更新
+        setInterval(loadDashboard, 60000);
     </script>
 </body>
 </html>
