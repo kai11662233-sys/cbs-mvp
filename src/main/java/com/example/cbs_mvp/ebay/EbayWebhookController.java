@@ -166,9 +166,14 @@ public class EbayWebhookController {
 
             if (sigJson.containsKey("signature")) {
                 return (String) sigJson.get("signature");
+            } else {
+                // JSONパース成功したがsignatureフィールドがない → 仕様変更の可能性
+                log.warn("⚠️ X-EBAY-SIGNATURE parsed as JSON but 'signature' field not found. " +
+                        "Keys present: {}. eBay may have changed their format.", sigJson.keySet());
             }
         } catch (Exception e) {
-            // Base64 JSONではない場合は元の値をそのまま使用
+            // Base64 JSONではない場合は元の値をそのまま使用（hex形式など）
+            log.debug("X-EBAY-SIGNATURE is not Base64 JSON format, using raw value");
         }
         return signatureHeader;
     }
