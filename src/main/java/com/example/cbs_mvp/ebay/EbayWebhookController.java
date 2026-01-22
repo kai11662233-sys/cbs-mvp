@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.cbs_mvp.ops.SystemFlagService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,13 @@ import lombok.RequiredArgsConstructor;
 public class EbayWebhookController {
 
     private static final Logger log = LoggerFactory.getLogger(EbayWebhookController.class);
+    private static final String WEBHOOK_SUCCESS_COUNT = "WEBHOOK_SIG_SUCCESS";
+    private static final String WEBHOOK_FAIL_COUNT = "WEBHOOK_SIG_FAIL";
+    private static final double FAILURE_RATE_THRESHOLD = 0.3; // 30%以上失敗で警告
 
     private final EbayOAuthConfig config;
     private final ObjectMapper objectMapper;
+    private final SystemFlagService flagService;
 
     /**
      * eBay通知受信エンドポイント
@@ -47,10 +52,12 @@ public class EbayWebhookController {
         // 署名検証
         if (config.isWebhookVerificationEnabled()) {
             if (!verifySignature(signature, rawPayload)) {
+                recordSignatureResult(false);
                 log.warn("⚠️ Webhook signature verification FAILED - possible spoofing attempt");
                 return ResponseEntity.status(401)
                         .body(Map.of("error", "signature verification failed"));
             }
+            recordSignatureResult(true);
             log.info("Webhook signature verified successfully");
         } else {
             log.warn("⚠️ Webhook signature verification DISABLED - configure ebay.webhook-verification-token!");
@@ -141,7 +148,13 @@ public class EbayWebhookController {
                 return true;
             }
 
-            log.warn("Signature mismatch");
+            // 署名不一致 - トラブルシュート用にペイロードのハッシュをログ出力
+            String payloadHash = bytesToHex(expectedHash).substring(0, 16);
+            log.warn("⚠️ Signature mismatch. payloadHash={}, signatureLen={}, expectedFormats=[base64:{}, hex:{}]",
+                    payloadHash,
+                    actualSignature.length(),
+                    expectedBase64.substring(0, Math.min(8, expectedBase64.length())) + "...",
+                    expectedHex.substring(0, 8) + "...");
             return false;
 
         } catch (Exception e) {
@@ -196,6 +209,45 @@ public class EbayWebhookController {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    /**
+     * 署名検証結果を記録し、失敗率が高い場合に警告
+     */
+    private void recordSignatureResult(boolean success) {
+        try {
+            long successCount = parseLong(flagService.get(WEBHOOK_SUCCESS_COUNT), 0);
+            long failCount = parseLong(flagService.get(WEBHOOK_FAIL_COUNT), 0);
+
+            if (success) {
+                successCount++;
+                flagService.set(WEBHOOK_SUCCESS_COUNT, String.valueOf(successCount));
+            } else {
+                failCount++;
+                flagService.set(WEBHOOK_FAIL_COUNT, String.valueOf(failCount));
+            }
+
+            long total = successCount + failCount;
+            if (total >= 10) { // 最低10件以上で評価
+                double failureRate = (double) failCount / total;
+                if (failureRate >= FAILURE_RATE_THRESHOLD) {
+                    log.error("🚨 Webhook署名検証の失敗率が高い: {}/{} ({}%) - 設定確認が必要",
+                            failCount, total, String.format("%.1f", failureRate * 100));
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to record signature result", e);
+        }
+    }
+
+    private long parseLong(String s, long defaultValue) {
+        if (s == null || s.isBlank())
+            return defaultValue;
+        try {
+            return Long.parseLong(s.trim());
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
     }
 
     @SuppressWarnings("unchecked")
