@@ -101,10 +101,18 @@ public class EbayWebhookController {
 
     /**
      * eBay署名検証
+     * 
+     * eBay Notification APIの署名形式:
+     * X-EBAY-SIGNATUREはBase64エンコードされたJSONヘッダーで、
+     * 内部に"signature"フィールドを含む場合がある。
+     * 
+     * また、単純なHMAC署名の場合はBase64またはhexエンコード。
+     * 両方の形式に対応。
+     * 
      * https://developer.ebay.com/api-docs/sell/notification/overview.html
      */
-    private boolean verifySignature(String signature, String payload) {
-        if (signature == null || signature.isBlank()) {
+    private boolean verifySignature(String signatureHeader, String payload) {
+        if (signatureHeader == null || signatureHeader.isBlank()) {
             log.warn("Missing X-EBAY-SIGNATURE header");
             return false;
         }
@@ -116,17 +124,62 @@ public class EbayWebhookController {
                     token.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
             mac.init(secretKey);
 
-            byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            byte[] expectedSignatureBytes = bytesToHex(hash).toLowerCase().getBytes(StandardCharsets.UTF_8);
-            byte[] actualSignatureBytes = signature.toLowerCase().getBytes(StandardCharsets.UTF_8);
+            byte[] expectedHash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
 
-            // 定数時間比較（タイミング攻撃対策）
-            return java.security.MessageDigest.isEqual(expectedSignatureBytes, actualSignatureBytes);
+            // 署名を抽出（Base64 JSON形式の場合は内部のsignatureフィールドを使用）
+            String actualSignature = extractSignature(signatureHeader);
+
+            // Base64形式で比較（eBayの標準形式）
+            String expectedBase64 = java.util.Base64.getEncoder().encodeToString(expectedHash);
+            if (constantTimeEquals(expectedBase64, actualSignature)) {
+                return true;
+            }
+
+            // Hex形式でも比較（互換性のため）
+            String expectedHex = bytesToHex(expectedHash);
+            if (constantTimeEquals(expectedHex.toLowerCase(), actualSignature.toLowerCase())) {
+                return true;
+            }
+
+            log.warn("Signature mismatch");
+            return false;
 
         } catch (Exception e) {
             log.error("Signature verification error", e);
             return false;
         }
+    }
+
+    /**
+     * X-EBAY-SIGNATUREから実際の署名を抽出
+     * Base64 JSON形式の場合は内部の"signature"フィールドを返す
+     */
+    private String extractSignature(String signatureHeader) {
+        try {
+            // Base64デコードしてJSONとしてパース
+            String decoded = new String(
+                    java.util.Base64.getDecoder().decode(signatureHeader),
+                    StandardCharsets.UTF_8);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> sigJson = objectMapper.readValue(decoded, Map.class);
+
+            if (sigJson.containsKey("signature")) {
+                return (String) sigJson.get("signature");
+            }
+        } catch (Exception e) {
+            // Base64 JSONではない場合は元の値をそのまま使用
+        }
+        return signatureHeader;
+    }
+
+    /**
+     * 定数時間比較（タイミング攻撃対策）
+     */
+    private boolean constantTimeEquals(String a, String b) {
+        byte[] aBytes = a.getBytes(StandardCharsets.UTF_8);
+        byte[] bBytes = b.getBytes(StandardCharsets.UTF_8);
+        return java.security.MessageDigest.isEqual(aBytes, bBytes);
     }
 
     private String bytesToHex(byte[] bytes) {
