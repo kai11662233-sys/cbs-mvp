@@ -66,7 +66,12 @@ public class CandidateController {
             return ResponseEntity.badRequest().body(Map.of("error", "fxRate is required"));
         }
         try {
-            PricingResult pr = candidateService.priceCandidate(candidateId, req.fxRate, req.targetSellUsd);
+            PricingResult pr = candidateService.priceCandidate(
+                    candidateId,
+                    req.fxRate,
+                    req.targetSellUsd,
+                    req.autoDraft != null && req.autoDraft // Default false
+            );
             return ResponseEntity.ok(Map.of(
                     "candidateId", pr.getCandidateId(),
                     "gateProfitOk", pr.isGateProfitOk(),
@@ -91,5 +96,6 @@ public class CandidateController {
     public static class CandidatePricingRequest {
         public BigDecimal fxRate;
         public BigDecimal targetSellUsd;
+        public Boolean autoDraft;
     }
 }

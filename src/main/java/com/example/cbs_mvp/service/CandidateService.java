@@ -25,6 +25,7 @@ public class CandidateService {
     private final GateService gateService;
     private final SystemFlagService flags;
     private final StateTransitionService transitions;
+    private final DraftService draftService;
 
     public CandidateService(
             CandidateRepository candidateRepo,
@@ -32,13 +33,15 @@ public class CandidateService {
             PricingCalculator pricingCalculator,
             GateService gateService,
             SystemFlagService flags,
-            StateTransitionService transitions) {
+            StateTransitionService transitions,
+            DraftService draftService) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
         this.pricingCalculator = pricingCalculator;
         this.gateService = gateService;
         this.flags = flags;
         this.transitions = transitions;
+        this.draftService = draftService;
     }
 
     @Transactional
@@ -62,7 +65,8 @@ public class CandidateService {
     }
 
     @Transactional
-    public PricingResult priceCandidate(Long candidateId, BigDecimal fxRate, BigDecimal targetSellUsd) {
+    public PricingResult priceCandidate(Long candidateId, BigDecimal fxRate, BigDecimal targetSellUsd,
+            boolean autoDraft) {
         Candidate c = candidateRepo.findById(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("candidate not found"));
 
@@ -129,6 +133,17 @@ public class CandidateService {
         candidateRepo.save(c);
         transitions.log("CANDIDATE", c.getCandidateId(), from, c.getState(), c.getRejectReasonCode(),
                 c.getRejectReasonDetail(), "SYSTEM", cid());
+
+        // Auto Draft Logic
+        if (autoDraft && pr.isGateProfitOk() && gateCashOk) {
+            try {
+                draftService.createDraft(candidateId);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(CandidateService.class).error("Auto-draft failed for candidateId={}",
+                        candidateId, e);
+                // Do not re-throw, we still want to return the pricing result
+            }
+        }
 
         return result;
     }

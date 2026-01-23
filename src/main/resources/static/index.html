@@ -518,6 +518,33 @@
             background: var(--accent);
             border-color: var(--accent);
         }
+
+        /* モーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
     </style>
 </head>
 
@@ -643,6 +670,7 @@
                                 <th>仕入価格</th>
                                 <th>サイズ</th>
                                 <th>状態</th>
+                                <th>操作</th>
                             </tr>
                         </thead>
                         <tbody id="candidatesTable">
@@ -739,6 +767,43 @@
                             <p>APIからレートを取得中...</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Modal -->
+        <div id="pricingModal" class="modal">
+            <div class="modal-content">
+                <h3 style="margin-bottom: 1.5rem;">Candidate Pricing</h3>
+                <input type="hidden" id="p_candidateId">
+                <input type="hidden" id="p_sourcePrice">
+                <input type="hidden" id="p_weight">
+                <input type="hidden" id="p_size">
+
+                <label>FX Rate (JPY/USD)</label>
+                <input type="number" id="p_fxRate" step="0.01">
+
+                <label>Target Sell Price (USD)</label>
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <input type="number" id="p_targetSell" step="0.01" placeholder="Auto Calc">
+                    <button class="btn btn-outline" onclick="calcTargetSell()">Run Calc</button>
+                </div>
+
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="p_autoDraft" style="width: auto; margin: 0;">
+                        <span>Auto Draft (Profit & Cash Gate OK)</span>
+                    </label>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 1.5rem;">
+                        If gates pass, automatically create eBay draft.
+                    </p>
+                </div>
+
+                <div id="modalMsg" style="margin-bottom: 1rem;"></div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-outline" onclick="closePricingModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitPricingAction()">Execute Pricing</button>
                 </div>
             </div>
         </div>
@@ -882,7 +947,17 @@
                                 <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.sourceUrl || '--'}</td>
                                 <td>${formatYen(c.sourcePriceYen)}</td>
                                 <td>${c.sizeTier || '--'}</td>
-                                <td><span class="badge ${getStateBadge(c.state)}">${c.state}</span></td>
+                                <td>
+                                    <span class="badge ${getStateBadge(c.state)}" 
+                                          title="${c.rejectReasonDetail || ''}">
+                                          ${c.state === 'REJECTED' && c.rejectReasonCode ? c.state + ' (' + c.rejectReasonCode + ')' : c.state}
+                                    </span>
+                                </td>
+                                <td>
+                                    ${c.state === 'CANDIDATE' ?
+                                `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier}')">Price</button>` :
+                                ''}
+                                </td>
                             </tr>
                         `).join('');
                     }
@@ -1120,6 +1195,109 @@
             if (state.includes('PENDING') || state.includes('WAIT')) return 'warning';
             if (state.includes('COMPLETE') || state.includes('DONE') || state === 'SOLD') return 'success';
             return 'info';
+        }
+
+        // Modal Functions
+        async function openPricingModal(id, sourcePrice, weight, size) {
+            document.getElementById('p_candidateId').value = id;
+            document.getElementById('p_sourcePrice').value = sourcePrice;
+            document.getElementById('p_weight').value = weight || '';
+            document.getElementById('p_size').value = size || 'M';
+            document.getElementById('p_targetSell').value = '';
+            document.getElementById('p_autoDraft').checked = false;
+            document.getElementById('modalMsg').innerHTML = '';
+
+            // FX Rate取得
+            try {
+                const fx = await api('/fx/rate');
+                if (fx && fx.rate) {
+                    document.getElementById('p_fxRate').value = fx.rate;
+                }
+            } catch (e) {
+                console.error('FX fetch error', e);
+            }
+
+            document.getElementById('pricingModal').classList.add('active');
+        }
+
+        function closePricingModal() {
+            document.getElementById('pricingModal').classList.remove('active');
+        }
+
+        async function calcTargetSell() {
+            const sourcePrice = parseFloat(document.getElementById('p_sourcePrice').value);
+            const weight = parseFloat(document.getElementById('p_weight').value);
+            const size = document.getElementById('p_size').value;
+            const fxRate = parseFloat(document.getElementById('p_fxRate').value);
+
+            if (!sourcePrice || !fxRate) {
+                document.getElementById('modalMsg').innerHTML = '<span class="text-danger">Missing params for calc</span>';
+                return;
+            }
+
+            try {
+                const res = await fetch('/pricing/calc', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sourcePriceYen: sourcePrice,
+                        weightKg: weight,
+                        sizeTier: size,
+                        fxRate: fxRate
+                    })
+                });
+                const data = await res.json();
+                if (data.useSellUsd) {
+                    document.getElementById('p_targetSell').value = data.useSellUsd;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function submitPricingAction() {
+            const id = document.getElementById('p_candidateId').value;
+            const fxRate = document.getElementById('p_fxRate').value;
+            const targetSell = document.getElementById('p_targetSell').value;
+            const autoDraft = document.getElementById('p_autoDraft').checked;
+
+            if (!fxRate) {
+                alert('FX Rate represents required');
+                return;
+            }
+
+            document.getElementById('modalMsg').innerHTML = '<span class="spinner"></span> Processing...';
+
+            try {
+                const res = await fetch(`/candidates/${id}/pricing`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fxRate: parseFloat(fxRate),
+                        targetSellUsd: targetSell ? parseFloat(targetSell) : null,
+                        autoDraft: autoDraft
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Success
+                    closePricingModal();
+                    loadCandidates();
+                    // Show result? Maybe just refresh list is enough and show badge update.
+                } else {
+                    document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">${data.error || 'Error'}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">Network Error</div>`;
+            }
         }
 
         // 定期更新

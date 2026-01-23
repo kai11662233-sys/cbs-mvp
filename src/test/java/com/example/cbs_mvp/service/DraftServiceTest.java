@@ -43,6 +43,11 @@ class DraftServiceTest {
 
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(1L)).thenReturn(Optional.of(candidate));
+
+        // Fix for freshness check NPE
+        candidate.setUpdatedAt(java.time.LocalDateTime.now());
+        pricing.setCreatedAt(java.time.LocalDateTime.now());
+
         when(pricingRepo.findByCandidateId(1L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-1")).thenReturn(Optional.empty());
         when(draftRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -78,6 +83,11 @@ class DraftServiceTest {
 
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(2L)).thenReturn(Optional.of(candidate));
+
+        // Fix for freshness check NPE
+        candidate.setUpdatedAt(java.time.LocalDateTime.now());
+        pricing.setCreatedAt(java.time.LocalDateTime.now());
+
         when(pricingRepo.findByCandidateId(2L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-2")).thenReturn(Optional.empty());
         when(draftRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -136,6 +146,11 @@ class DraftServiceTest {
 
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(3L)).thenReturn(Optional.of(candidate));
+
+        // Fix for freshness check NPE
+        candidate.setUpdatedAt(java.time.LocalDateTime.now());
+        pricing.setCreatedAt(java.time.LocalDateTime.now());
+
         when(pricingRepo.findByCandidateId(3L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-3")).thenReturn(Optional.of(existingDraft));
 
