@@ -933,13 +933,13 @@
         // Candidate読み込み
         async function loadCandidates() {
             const tbody = document.getElementById('candidatesTable');
-            tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
 
             try {
                 const data = await api('/candidates');
                 if (data && Array.isArray(data)) {
                     if (data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-secondary);">データがありません</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-secondary);">データがありません</td></tr>';
                     } else {
                         tbody.innerHTML = data.slice(0, 20).map(c => `
                             <tr>
@@ -955,7 +955,7 @@
                                 </td>
                                 <td>
                                     ${c.state === 'CANDIDATE' ?
-                                `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier}')">Price</button>` :
+                                `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier || ''}')">Price</button>` :
                                 ''}
                                 </td>
                             </tr>
@@ -963,7 +963,7 @@
                     }
                 }
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" style="color: var(--danger);">読み込みエラー</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="color: var(--danger);">読み込みエラー</td></tr>';
             }
         }
 
