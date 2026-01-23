@@ -74,8 +74,8 @@ public class PricingCalculator {
 
         // Q: PROFIT GATE（Cross Multiply）
         boolean profitAmountOk = profitYen.compareTo(profitMinYen) >= 0;
-        boolean profitRateOk = profitYen.multiply(new BigDecimal("100"))
-                .compareTo(totalCost.multiply(new BigDecimal("20"))) >= 0;
+        // profit_rate >= profitMinRate <=> profitYen >= totalCost * profitMinRate
+        boolean profitRateOk = profitYen.compareTo(totalCost.multiply(profitMinRate)) >= 0;
 
         boolean gateProfitOk = profitAmountOk && profitRateOk;
 

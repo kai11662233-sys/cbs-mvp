@@ -108,10 +108,7 @@ public class CandidateService {
 
         result.setGateProfitOk(pr.isGateProfitOk());
         result.setGateCashOk(gateCashOk);
-        pricingRepo.save(result);
 
-        result.setGateProfitOk(pr.isGateProfitOk());
-        result.setGateCashOk(gateCashOk);
         pricingRepo.save(result);
 
         org.slf4j.LoggerFactory.getLogger(CandidateService.class).info(
