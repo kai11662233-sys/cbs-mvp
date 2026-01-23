@@ -59,6 +59,19 @@ public class PricingResult {
     @Column(name = "gate_profit_ok", nullable = false)
     private boolean gateProfitOk;
 
+    // --- Snapshot Columns (Calculation Assumptions) ---
+    @Column(name = "calc_source_price_yen", precision = 12, scale = 2)
+    private BigDecimal calcSourcePriceYen;
+
+    @Column(name = "calc_weight_kg", precision = 6, scale = 3)
+    private BigDecimal calcWeightKg;
+
+    @Column(name = "calc_intl_ship_yen", precision = 12, scale = 2)
+    private BigDecimal calcIntlShipYen;
+
+    @Column(name = "used_fee_rate", precision = 6, scale = 4)
+    private BigDecimal usedFeeRate;
+
     @Column(name = "gate_cash_ok", nullable = false)
     private boolean gateCashOk;
 
@@ -67,6 +80,7 @@ public class PricingResult {
 
     @PrePersist
     void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (createdAt == null)
+            createdAt = LocalDateTime.now();
     }
 }

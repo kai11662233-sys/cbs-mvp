@@ -1,5 +1,8 @@
 server:
   port: 8080
+  error:
+    include-stacktrace: always
+    include-message: always
 
 spring:
   datasource:
@@ -23,8 +26,12 @@ spring:
 
 logging:
   level:
+    root: INFO
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: TRACE
+    org.springframework.security: DEBUG
     org.springframework.scheduling: INFO
-    com.example.cbs_mvp.ebay: DEBUG
+    com.example.cbs_mvp: DEBUG
 
 # eBay OAuth設定（環境変数で上書き可能）
 ebay:

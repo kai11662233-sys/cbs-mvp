@@ -14,14 +14,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import lombok.RequiredArgsConstructor;
 
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity(debug = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthFilter jwtAuthFilter;
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtTokenService jwtTokenService)
+            throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session
@@ -29,12 +28,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 公開エンドポイント
                         .requestMatchers("/", "/index.html").permitAll()
+                        .requestMatchers("/error").permitAll() // エラー詳細が見えるようにする
                         .requestMatchers("/*.html", "/*.css", "/*.js", "/*.png", "/*.ico").permitAll()
                         .requestMatchers("/health", "/health/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
                         .requestMatchers("/auth/change-password").authenticated() // 認証必須
                         .requestMatchers("/ops/status").permitAll()
                         .requestMatchers("/pricing/**").permitAll()
+                        .requestMatchers("/fx/rate").permitAll() // Price calc needs this
                         .requestMatchers("/ebay/webhook").permitAll()
 
                         // OPS-KEY or JWT 認証が必要
@@ -49,9 +50,14 @@ public class SecurityConfig {
 
                         // その他は認証必須
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public JwtAuthFilter jwtAuthFilter(JwtTokenService jwtTokenService) {
+        return new JwtAuthFilter(jwtTokenService);
     }
 
     @Bean

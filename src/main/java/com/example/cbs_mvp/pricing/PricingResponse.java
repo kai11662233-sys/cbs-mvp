@@ -12,17 +12,20 @@ public class PricingResponse {
     String safeSizeTier;
     BigDecimal fxSafe;
 
-    BigDecimal intlShipCostYen;   // L
-    BigDecimal totalCostYen;      // M
+    BigDecimal calcSourcePriceYen; // Snapshot
+    BigDecimal usedFeeRate; // Snapshot
 
-    BigDecimal recSellUsd;        // I
-    BigDecimal useSellUsd;        // J
-    BigDecimal sellYen;           // K
+    BigDecimal intlShipCostYen; // L
+    BigDecimal totalCostYen; // M
+
+    BigDecimal recSellUsd; // I
+    BigDecimal useSellUsd; // J
+    BigDecimal sellYen; // K
 
     BigDecimal feesAndReserveYen; // N
-    BigDecimal profitYen;         // O
-    BigDecimal profitRate;        // P（表示用）
+    BigDecimal profitYen; // O
+    BigDecimal profitRate; // P（表示用）
 
-    boolean gateProfitOk;         // Q
-    String warn;                  // W（Price Low 等）
+    boolean gateProfitOk; // Q
+    String warn; // W（Price Low 等）
 }

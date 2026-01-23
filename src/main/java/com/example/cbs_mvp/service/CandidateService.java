@@ -32,8 +32,7 @@ public class CandidateService {
             PricingCalculator pricingCalculator,
             GateService gateService,
             SystemFlagService flags,
-            StateTransitionService transitions
-    ) {
+            StateTransitionService transitions) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
         this.pricingCalculator = pricingCalculator;
@@ -48,8 +47,7 @@ public class CandidateService {
             BigDecimal sourcePriceYen,
             BigDecimal weightKg,
             String sizeTier,
-            String memo
-    ) {
+            String memo) {
         Candidate c = new Candidate();
         c.setSourceUrl(sourceUrl);
         c.setSourcePriceYen(sourcePriceYen);
@@ -101,9 +99,25 @@ public class CandidateService {
         result.setRefundReserveYen(reserveYen);
         result.setProfitYen(profitYen);
         result.setProfitRate(profitRate);
+
+        // Snapshot
+        result.setCalcSourcePriceYen(pr.getCalcSourcePriceYen());
+        result.setCalcWeightKg(pr.getSafeWeightKg());
+        result.setCalcIntlShipYen(pr.getIntlShipCostYen());
+        result.setUsedFeeRate(pr.getUsedFeeRate());
+
         result.setGateProfitOk(pr.isGateProfitOk());
         result.setGateCashOk(gateCashOk);
         pricingRepo.save(result);
+
+        result.setGateProfitOk(pr.isGateProfitOk());
+        result.setGateCashOk(gateCashOk);
+        pricingRepo.save(result);
+
+        org.slf4j.LoggerFactory.getLogger(CandidateService.class).info(
+                "Saved Pricing Snapshot: candidateId={}, weight={}, sourcePrice={}, feeRate={}, ship={}",
+                candidateId, result.getCalcWeightKg(), result.getCalcSourcePriceYen(), result.getUsedFeeRate(),
+                result.getCalcIntlShipYen());
 
         String from = c.getState();
         if (pr.isGateProfitOk() && gateCashOk) {
@@ -116,20 +130,25 @@ public class CandidateService {
             c.setRejectReasonDetail(reasonDetail(pr.isGateProfitOk(), gateCashOk));
         }
         candidateRepo.save(c);
-        transitions.log("CANDIDATE", c.getCandidateId(), from, c.getState(), c.getRejectReasonCode(), c.getRejectReasonDetail(), "SYSTEM", cid());
+        transitions.log("CANDIDATE", c.getCandidateId(), from, c.getState(), c.getRejectReasonCode(),
+                c.getRejectReasonDetail(), "SYSTEM", cid());
 
         return result;
     }
 
     private static String reasonCode(boolean profitOk, boolean cashOk) {
-        if (profitOk && cashOk) return null;
-        if (!profitOk && !cashOk) return "GATE_BOTH";
+        if (profitOk && cashOk)
+            return null;
+        if (!profitOk && !cashOk)
+            return "GATE_BOTH";
         return profitOk ? "GATE_CASH" : "GATE_PROFIT";
     }
 
     private static String reasonDetail(boolean profitOk, boolean cashOk) {
-        if (profitOk && cashOk) return null;
-        if (!profitOk && !cashOk) return "profit and cash gate failed";
+        if (profitOk && cashOk)
+            return null;
+        if (!profitOk && !cashOk)
+            return "profit and cash gate failed";
         return profitOk ? "cash gate failed" : "profit gate failed";
     }
 

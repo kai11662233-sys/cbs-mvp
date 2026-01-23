@@ -92,6 +92,11 @@ CREATE TABLE IF NOT EXISTS pricing_results (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_source_price_yen NUMERIC(12,2);
+ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_weight_kg NUMERIC(6,3);
+ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_intl_ship_yen NUMERIC(12,2);
+ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS used_fee_rate NUMERIC(6,4);
+
 -- 4) ebay_drafts
 CREATE TABLE IF NOT EXISTS ebay_drafts (
   draft_id BIGSERIAL PRIMARY KEY,
@@ -199,3 +204,15 @@ CREATE TABLE IF NOT EXISTS state_transitions (
 
 CREATE INDEX IF NOT EXISTS idx_state_transitions_entity
   ON state_transitions(entity_type, entity_id);
+
+-- 10) fx_rate_history
+CREATE TABLE IF NOT EXISTS fx_rate_history (
+  history_id BIGSERIAL PRIMARY KEY,
+  base_currency VARCHAR(3) NOT NULL,
+  target_currency VARCHAR(3) NOT NULL,
+  rate NUMERIC(10, 4) NOT NULL,
+  source VARCHAR(50) NOT NULL,
+  change_percent NUMERIC(6, 2),
+  is_anomaly BOOLEAN NOT NULL DEFAULT FALSE,
+  fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

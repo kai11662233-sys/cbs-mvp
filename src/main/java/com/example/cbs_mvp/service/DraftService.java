@@ -39,8 +39,7 @@ public class DraftService {
             EbayDraftRepository draftRepo,
             EbayClient ebayClient,
             KillSwitchService killSwitch,
-            StateTransitionService transitions
-    ) {
+            StateTransitionService transitions) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
         this.draftRepo = draftRepo;
@@ -65,6 +64,15 @@ public class DraftService {
 
         PricingResult pr = pricingRepo.findByCandidateId(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("pricing result not found"));
+
+        // Freshness Check (Pricing must be newer than Candidate update, with small
+        // buffer)
+        // c.updatedAt is likely slightly after pr.createdAt due to priceCandidate logic
+        // ordering
+        long diffMillis = java.time.Duration.between(pr.getCreatedAt(), c.getUpdatedAt()).toMillis();
+        if (diffMillis > 2000) { // If candidate updated more than 2s after pricing
+            throw new IllegalStateException("pricing result is stale (candidate modified after pricing)");
+        }
 
         String sku = "CAND-" + candidateId;
 
@@ -140,8 +148,7 @@ public class DraftService {
 
         List<Candidate> candidates = candidateRepo.findByStateIn(
                 List.of("DRAFT_READY", "EBAY_DRAFT_FAILED"),
-                PageRequest.of(0, limit)
-        );
+                PageRequest.of(0, limit));
         int success = 0;
         for (Candidate c : candidates) {
             try {
@@ -159,15 +166,13 @@ public class DraftService {
     private static Map<String, Object> inventoryPayload(String sku, BigDecimal priceUsd) {
         return Map.of(
                 "sku", sku,
-                "priceUsd", priceUsd
-        );
+                "priceUsd", priceUsd);
     }
 
     private static Map<String, Object> offerPayload(String sku, BigDecimal priceUsd) {
         return Map.of(
                 "sku", sku,
-                "offerPriceUsd", priceUsd
-        );
+                "offerPriceUsd", priceUsd);
     }
 
     private static String cid() {

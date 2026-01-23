@@ -22,6 +22,7 @@ public class FxRateHistory {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "history_id")
     private Long id;
 
     @Column(nullable = false, length = 10)
@@ -50,7 +51,7 @@ public class FxRateHistory {
      * 異常検知フラグ
      * true: 急変を検知（閾値超え）
      */
-    @Column(nullable = false)
+    @Column(name = "is_anomaly", nullable = false)
     private boolean anomaly = false;
 
     @PrePersist
