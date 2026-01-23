@@ -28,4 +28,9 @@ public class PricingResponse {
 
     boolean gateProfitOk; // Q
     String warn; // W（Price Low 等）
+
+    // Comparison (Previous State)
+    BigDecimal prevProfitYen;
+    BigDecimal prevProfitRate;
+    BigDecimal diffProfitYen;
 }

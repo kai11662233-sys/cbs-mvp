@@ -1204,13 +1204,14 @@
 
         // Modal Functions
         async function openPricingModal(id, sourcePrice, weight, size) {
+            document.getElementById('pricingModal').style.display = 'flex';
             document.getElementById('p_candidateId').value = id;
             document.getElementById('p_sourcePrice').value = sourcePrice;
             document.getElementById('p_weight').value = weight || '';
             document.getElementById('p_size').value = size || 'M';
             document.getElementById('p_targetSell').value = '';
             document.getElementById('p_autoDraft').checked = false;
-            document.getElementById('modalMsg').innerHTML = '';
+            if (document.getElementById('modalMsg')) document.getElementById('modalMsg').innerHTML = '';
 
             // FX Rate取得
             try {
@@ -1230,15 +1231,17 @@
         }
 
         async function calcTargetSell() {
-            const sourcePrice = parseFloat(document.getElementById('p_sourcePrice').value);
-            const weight = parseFloat(document.getElementById('p_weight').value);
+            const id = document.getElementById('p_candidateId').value;
+            const sourcePrice = document.getElementById('p_sourcePrice').value;
+            const weight = document.getElementById('p_weight').value;
             const size = document.getElementById('p_size').value;
-            const fxRate = parseFloat(document.getElementById('p_fxRate').value);
+            const fxRate = document.getElementById('p_fxRate').value;
+            const targetSell = document.getElementById('p_targetSell').value;
 
-            if (!sourcePrice || !fxRate) {
-                document.getElementById('modalMsg').innerHTML = '<span class="text-danger">Missing params for calc</span>';
-                return;
-            }
+            if (!fxRate) { alert('FX Rate required'); return; }
+
+            // Clear previous message
+            document.getElementById('modalMsg').innerHTML = '';
 
             try {
                 const res = await fetch('/pricing/calc', {
@@ -1248,18 +1251,45 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        sourcePriceYen: sourcePrice,
-                        weightKg: weight,
+                        candidateId: id ? parseInt(id) : null,
+                        sourcePriceYen: parseFloat(sourcePrice),
+                        weightKg: parseFloat(weight),
                         sizeTier: size,
-                        fxRate: fxRate
+                        fxRate: parseFloat(fxRate),
+                        targetSellUsd: targetSell ? parseFloat(targetSell) : null
                     })
                 });
                 const data = await res.json();
-                if (data.useSellUsd) {
+
+                // Update Target Sell if auto-calc was requested (empty input)
+                if (!targetSell && data.useSellUsd) {
                     document.getElementById('p_targetSell').value = data.useSellUsd;
                 }
+
+                // Show Comparison / Profit Info
+                const profitRatePct = (data.profitRate * 100).toFixed(1);
+                let msg = `<div>Profit: ¥${formatYen(data.profitYen)} (${profitRatePct}%)</div>`;
+
+                // History Comparison
+                if (data.prevProfitYen !== undefined && data.prevProfitYen !== null) {
+                    const diff = data.diffProfitYen;
+                    const sign = diff >= 0 ? '+' : '';
+                    const color = diff >= 0 ? 'success' : 'danger';
+                    msg += `<div style="font-size: 0.9em; margin-top: 4px;">
+                                Prev: ¥${formatYen(data.prevProfitYen)} 
+                                <span class="${color}">(${sign}¥${formatYen(diff)})</span>
+                            </div>`;
+                }
+
+                if (!data.gateProfitOk) {
+                    msg += `<div class="danger" style="margin-top:4px;">⚠️ Profit Gate NG</div>`;
+                }
+
+                document.getElementById('modalMsg').innerHTML = msg;
+
             } catch (e) {
                 console.error(e);
+                document.getElementById('modalMsg').innerHTML = `<div class="danger">Calc Error</div>`;
             }
         }
 
