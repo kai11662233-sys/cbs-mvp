@@ -582,6 +582,7 @@
             <!-- ダッシュボードページ -->
             <div id="page-dashboard" class="page active">
                 <div class="grid grid-4">
+                    <!-- Row 1: Operations -->
                     <div class="card">
                         <div class="card-header">
                             <span class="card-title">30日売上</span>
@@ -609,6 +610,38 @@
                             <div class="stat-icon green">💱</div>
                         </div>
                         <div class="card-value" id="fxRate">--</div>
+                    </div>
+
+                    <!-- Row 2: Profitability -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">平均利益率</span>
+                            <div class="stat-icon green">📈</div>
+                        </div>
+                        <div class="card-value" id="statsAvgMargin">--</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">DRAFT_READY</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">ゲート通過率</span>
+                            <div class="stat-icon blue">✅</div>
+                        </div>
+                        <div class="card-value" id="statsPassRate">--</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">見込み利益総額</span>
+                            <div class="stat-icon yellow">💰</div>
+                        </div>
+                        <div class="card-value" id="statsTotalProfit">--</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">DRAFT_READY</div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">見込み売上総額</span>
+                            <div class="stat-icon blue">💵</div>
+                        </div>
+                        <div class="card-value" id="statsTotalSales">--</div>
                     </div>
                 </div>
 
@@ -644,27 +677,51 @@
                     <input type="file" id="csvFile" accept=".csv" style="display: none;"
                         onchange="handleCsvSelect(event)">
 
-                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
-                        <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                             <input type="checkbox" id="skipDuplicates" style="width: auto; margin: 0;">
                             重複URLをスキップ
                         </label>
-                        <button class="btn btn-outline btn-sm" onclick="previewCsv()">プレビュー</button>
-                        <button class="btn btn-primary btn-sm" onclick="importCsv()">インポート</button>
+                        <label
+                            style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-left: 1rem;">
+                            <input type="checkbox" id="autoFilterProfit" style="width: auto; margin: 0;">
+                            利益判定フィルタ (NGはREJECTED)
+                        </label>
+                        <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+                            <button class="btn btn-outline btn-sm" onclick="previewCsv()">プレビュー</button>
+                            <button class="btn btn-primary btn-sm" onclick="importCsv()">インポート</button>
+                        </div>
                     </div>
 
                     <div id="csvResult" style="margin-top: 1rem;"></div>
                 </div>
 
                 <div class="card">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3>Candidate一覧</h3>
-                        <button class="btn btn-outline btn-sm" onclick="loadCandidates()">🔄 更新</button>
+                    <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3>Candidate一覧</h3>
+                            <button class="btn btn-outline btn-sm" onclick="loadCandidates()">🔄 更新</button>
+                        </div>
+
+                        <!-- Bulk Actions Bar -->
+                        <div id="bulkActionBar"
+                            style="display: none; background: var(--bg-card); padding: 0.75rem; border-radius: 0.5rem; align-items: center; gap: 1rem;">
+                            <span style="font-weight: 500;"><span id="selectedCount">0</span> selected</span>
+                            <div style="height: 20px; width: 1px; background: var(--text-secondary);"></div>
+                            <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="bulkAutoDraft" style="width: auto; margin: 0;">
+                                Create Drafts if OK
+                            </label>
+                            <button class="btn btn-primary btn-sm" onclick="executeBulkPricing()">Auto-Price
+                                Selected</button>
+                        </div>
                     </div>
+
                     <table>
                         <thead>
                             <tr>
+                                <th style="width: 40px;"><input type="checkbox" id="selectAll"
+                                        onchange="toggleSelectAll()"></th>
                                 <th>ID</th>
                                 <th>URL</th>
                                 <th>仕入価格</th>
@@ -675,7 +732,7 @@
                         </thead>
                         <tbody id="candidatesTable">
                             <tr>
-                                <td colspan="6" class="loading">読み込み中...</td>
+                                <td colspan="7" class="loading">読み込み中...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -787,9 +844,13 @@
                 <input type="number" id="p_fxRate" step="0.01">
 
                 <label>Target Sell Price (USD)</label>
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <input type="number" id="p_targetSell" step="0.01" placeholder="Auto Calc">
-                    <button class="btn btn-outline" onclick="calcTargetSell()">Run Calc</button>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="number" id="p_targetSell" step="0.01" placeholder="Auto Calc"
+                            oninput="syncSlider()">
+                        <button class="btn btn-outline" onclick="calcTargetSell()">Run Calc</button>
+                    </div>
+                    <input type="range" id="p_targetSellRange" min="1" max="500" step="1" oninput="syncInput()">
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
@@ -915,6 +976,23 @@
                     }
                 }
 
+                // Profitability Stats
+                const stats = await api('/ops/dashboard/stats');
+                if (stats) {
+                    const avgRate = (stats.avgProfitRate || 0) * 100;
+                    const passRate = (stats.passRate || 0) * 100;
+
+                    const avgEl = document.getElementById('statsAvgMargin');
+                    avgEl.textContent = avgRate.toFixed(1) + '%';
+                    if (avgRate >= 20) avgEl.className = 'card-value success';
+                    else if (avgRate < 15) avgEl.className = 'card-value danger';
+                    else avgEl.className = 'card-value warning';
+
+                    document.getElementById('statsPassRate').textContent = passRate.toFixed(1) + '%';
+                    document.getElementById('statsTotalProfit').textContent = formatYen(stats.totalProfitYen);
+                    document.getElementById('statsTotalSales').textContent = formatYen(stats.totalSalesYen);
+                }
+
                 // Cash Status
                 const cash = await api('/cash/status');
                 if (cash) {
@@ -936,16 +1014,22 @@
         // Candidate読み込み
         async function loadCandidates() {
             const tbody = document.getElementById('candidatesTable');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
+            updateBulkBar(); // Reset bulk state
 
             try {
                 const data = await api('/candidates');
                 if (data && Array.isArray(data)) {
                     if (data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-secondary);">データがありません</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="7" style="color: var(--text-secondary);">データがありません</td></tr>';
                     } else {
                         tbody.innerHTML = data.slice(0, 20).map(c => `
                             <tr>
+                                <td>
+                                    ${c.state === 'CANDIDATE' || c.state === 'REJECTED' || c.state === 'DRAFT_READY' ?
+                                `<input type="checkbox" class="bulk-check" value="${c.candidateId}" onchange="updateBulkBar()">` :
+                                ''}
+                                </td>
                                 <td>${c.candidateId}</td>
                                 <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.sourceUrl || '--'}</td>
                                 <td>${formatYen(c.sourcePriceYen)}</td>
@@ -966,7 +1050,70 @@
                     }
                 }
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" style="color: var(--danger);">読み込みエラー</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="color: var(--danger);">読み込みエラー</td></tr>';
+            }
+        }
+
+        // Bulk Actions
+        function toggleSelectAll() {
+            const all = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = all);
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const checked = document.querySelectorAll('.bulk-check:checked');
+            const bar = document.getElementById('bulkActionBar');
+            document.getElementById('selectedCount').textContent = checked.length;
+            bar.style.display = checked.length > 0 ? 'flex' : 'none';
+        }
+
+        async function executeBulkPricing() {
+            const checked = document.querySelectorAll('.bulk-check:checked');
+            if (checked.length === 0) return;
+
+            const ids = Array.from(checked).map(cb => parseInt(cb.value));
+            const autoDraft = document.getElementById('bulkAutoDraft').checked;
+
+            // Need FX Rate
+            let fxRate = null;
+            try {
+                const fx = await api('/fx/rate');
+                if (!fx || !fx.rate) throw new Error("FX Rate unavailable");
+                fxRate = fx.rate;
+            } catch (e) {
+                alert("Cannot proceed: " + e.message);
+                return;
+            }
+
+            if (!confirm(`${ids.length} items selected.\nExecute Auto-Price (FX: ${fxRate})?${autoDraft ? '\nAnd create drafts if profitable.' : ''}`)) return;
+
+            // Show loading
+            document.querySelectorAll('.bulk-check:checked').forEach(cb => {
+                const row = cb.closest('tr');
+                row.style.opacity = '0.5';
+            });
+
+            try {
+                const res = await fetch('/candidates/bulk/price-and-draft', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        candidateIds: ids,
+                        fxRate: fxRate,
+                        autoDraft: autoDraft
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert(`Completed!\nSuccess: ${data.successCount}\nFailures: ${data.failureCount}\n${data.errors.length > 0 ? 'Errors:\n' + data.errors.join('\n') : ''}`);
+                    loadCandidates();
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Network Error');
             }
         }
 
@@ -1060,13 +1207,14 @@
             if (!selectedFile) { alert('ファイルを選択してください'); return; }
 
             const skipDuplicates = document.getElementById('skipDuplicates').checked;
+            const autoFilterProfit = document.getElementById('autoFilterProfit').checked;
             const formData = new FormData();
             formData.append('file', selectedFile);
 
             document.getElementById('csvResult').innerHTML = '<span class="spinner"></span> インポート中...';
 
             try {
-                const res = await fetch(`/candidates/import-csv?skipDuplicates=${skipDuplicates}`, {
+                const res = await fetch(`/candidates/import-csv?skipDuplicates=${skipDuplicates}&autoFilterProfit=${autoFilterProfit}`, {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token },
                     body: formData
@@ -1196,7 +1344,7 @@
 
         function getStateBadge(state) {
             if (!state) return 'info';
-            if (state.includes('FAIL') || state.includes('ERROR')) return 'danger';
+            if (state.includes('FAIL') || state.includes('ERROR') || state.includes('REJECTED')) return 'danger';
             if (state.includes('PENDING') || state.includes('WAIT')) return 'warning';
             if (state.includes('COMPLETE') || state.includes('DONE') || state === 'SOLD') return 'success';
             return 'info';
@@ -1333,6 +1481,27 @@
             } catch (e) {
                 document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">Network Error</div>`;
             }
+        }
+
+        // Debounce setup
+        let debounceTimer;
+        function debouncedCalc() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(calcTargetSell, 300);
+        }
+
+        function syncSlider() {
+            const val = document.getElementById('p_targetSell').value;
+            if (val) {
+                document.getElementById('p_targetSellRange').value = val;
+                debouncedCalc(); // Auto-calc on manual input too
+            }
+        }
+
+        function syncInput() {
+            const val = document.getElementById('p_targetSellRange').value;
+            document.getElementById('p_targetSell').value = val;
+            debouncedCalc(); // Auto-calc on slider move
         }
 
         // 定期更新
