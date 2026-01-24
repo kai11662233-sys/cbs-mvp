@@ -31,6 +31,8 @@ public class OpsController {
     private final EbayDraftRepository draftRepo;
     private final StateTransitionService transitions;
     private final StateTransitionRepository transitionRepo;
+    private final com.example.cbs_mvp.repo.CandidateRepository candidateRepo;
+    private final com.example.cbs_mvp.repo.PricingResultRepository pricingResultRepo;
 
     public OpsController(
             OpsKeyService opsKeyService,
@@ -40,7 +42,9 @@ public class OpsController {
             CashLedgerRepository cashLedgerRepo,
             EbayDraftRepository draftRepo,
             StateTransitionService transitions,
-            StateTransitionRepository transitionRepo) {
+            StateTransitionRepository transitionRepo,
+            com.example.cbs_mvp.repo.CandidateRepository candidateRepo,
+            com.example.cbs_mvp.repo.PricingResultRepository pricingResultRepo) {
         this.opsKeyService = opsKeyService;
         this.killSwitchService = killSwitchService;
         this.flags = flags;
@@ -49,6 +53,8 @@ public class OpsController {
         this.draftRepo = draftRepo;
         this.transitions = transitions;
         this.transitionRepo = transitionRepo;
+        this.candidateRepo = candidateRepo;
+        this.pricingResultRepo = pricingResultRepo;
     }
 
     @PostConstruct
@@ -154,9 +160,24 @@ public class OpsController {
                 cid());
 
         return ResponseEntity.ok(Map.of(
-                "sales30dYen", sales30dYen,
                 "updatedFlagYen", sales30dYen,
                 "ts", Instant.now().toString()));
+    }
+
+    @PostMapping("/flags/{key}")
+    public ResponseEntity<?> setFlag(
+            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
+            @PathVariable String key,
+            @RequestBody Map<String, String> body) {
+        if (!opsKeyService.isValid(opsKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid ops key"));
+        }
+        String val = body.get("value");
+        flags.set(key, val);
+
+        transitions.log("SYSTEM", 0L, null, "FLAG_UPDATE", key, "new_val=" + val, "OPS", cid());
+
+        return ResponseEntity.ok(Map.of(key, val == null ? "null" : val));
     }
 
     private BigDecimal sumSales30d() {
@@ -187,6 +208,45 @@ public class OpsController {
                 .map(StateTransition::getEntityId)
                 .distinct()
                 .count();
+    }
+
+    @GetMapping("/dashboard/stats")
+    public ResponseEntity<?> dashboardStats(@RequestHeader(value = "X-OPS-KEY", required = false) String opsKey) {
+        if (!opsKeyService.isValid(opsKey)) {
+            // For dashboard, maybe we should allow JWT too?
+            // Using same check as summary logic
+            boolean isAuthenticated = org.springframework.security.core.context.SecurityContextHolder
+                    .getContext().getAuthentication() != null
+                    && org.springframework.security.core.context.SecurityContextHolder
+                            .getContext().getAuthentication().isAuthenticated()
+                    && !(org.springframework.security.core.context.SecurityContextHolder
+                            .getContext()
+                            .getAuthentication() instanceof org.springframework.security.authentication.AnonymousAuthenticationToken);
+
+            if (!isAuthenticated) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Unauthorized"));
+            }
+        }
+
+        // 1. Stats from PricingResults (DRAFT_READY)
+        var prStats = pricingResultRepo.findStatsByState("DRAFT_READY");
+        BigDecimal avgProfitRate = nz(prStats.getAvgProfitRate());
+        BigDecimal totalProfitYen = nz(prStats.getTotalProfitYen());
+        BigDecimal totalSalesYen = nz(prStats.getTotalSalesYen());
+
+        // 2. Counts for Pass Rate
+        long countDraftReady = candidateRepo.countByState("DRAFT_READY");
+        long countTotalObj = candidateRepo.countByStateIn(java.util.List.of("CANDIDATE", "DRAFT_READY", "REJECTED"));
+
+        double passRate = (countTotalObj == 0) ? 0.0 : (double) countDraftReady / countTotalObj;
+
+        return ResponseEntity.ok(Map.of(
+                "avgProfitRate", avgProfitRate,
+                "totalProfitYen", totalProfitYen,
+                "totalSalesYen", totalSalesYen,
+                "countDraftReady", countDraftReady,
+                "countTotalScope", countTotalObj,
+                "passRate", passRate));
     }
 
     private static String cid() {
