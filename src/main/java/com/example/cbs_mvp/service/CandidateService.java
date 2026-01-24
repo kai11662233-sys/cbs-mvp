@@ -14,6 +14,7 @@ import com.example.cbs_mvp.pricing.PricingCalculator;
 import com.example.cbs_mvp.pricing.PricingRequest;
 import com.example.cbs_mvp.pricing.PricingResponse;
 import com.example.cbs_mvp.repo.CandidateRepository;
+import com.example.cbs_mvp.repo.PricingResultHistoryRepository;
 import com.example.cbs_mvp.repo.PricingResultRepository;
 
 @Service
@@ -21,6 +22,7 @@ public class CandidateService {
 
     private final CandidateRepository candidateRepo;
     private final PricingResultRepository pricingRepo;
+    private final PricingResultHistoryRepository historyRepo;
     private final PricingCalculator pricingCalculator;
     private final GateService gateService;
     private final SystemFlagService flags;
@@ -30,6 +32,7 @@ public class CandidateService {
     public CandidateService(
             CandidateRepository candidateRepo,
             PricingResultRepository pricingRepo,
+            PricingResultHistoryRepository historyRepo,
             PricingCalculator pricingCalculator,
             GateService gateService,
             SystemFlagService flags,
@@ -37,6 +40,7 @@ public class CandidateService {
             DraftService draftService) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
+        this.historyRepo = historyRepo;
         this.pricingCalculator = pricingCalculator;
         this.gateService = gateService;
         this.flags = flags;
@@ -113,7 +117,10 @@ public class CandidateService {
         result.setGateProfitOk(pr.isGateProfitOk());
         result.setGateCashOk(gateCashOk);
 
-        pricingRepo.save(result);
+        PricingResult saved = pricingRepo.save(result);
+
+        // --- Save History ---
+        saveHistory(candidateId, saved);
 
         org.slf4j.LoggerFactory.getLogger(CandidateService.class).info(
                 "Saved Pricing Snapshot: candidateId={}, weight={}, sourcePrice={}, feeRate={}, ship={}",
@@ -145,7 +152,19 @@ public class CandidateService {
             }
         }
 
-        return result;
+        return saved;
+    }
+
+    private void saveHistory(Long candidateId, PricingResult current) {
+        com.example.cbs_mvp.entity.PricingResultHistory history = new com.example.cbs_mvp.entity.PricingResultHistory();
+        history.setCandidateId(candidateId);
+        history.setPricingId(current.getPricingId());
+        history.setFxRate(current.getFxRate());
+        history.setSellPriceUsd(current.getSellPriceUsd());
+        history.setTotalCostYen(current.getTotalCostYen());
+        history.setProfitYen(current.getProfitYen());
+        history.setProfitRate(current.getProfitRate());
+        historyRepo.save(history);
     }
 
     private static String reasonCode(boolean profitOk, boolean cashOk) {

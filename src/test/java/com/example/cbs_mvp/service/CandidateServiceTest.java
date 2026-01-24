@@ -16,6 +16,8 @@ import com.example.cbs_mvp.pricing.PricingCalculator;
 import com.example.cbs_mvp.pricing.PricingRequest;
 import com.example.cbs_mvp.pricing.PricingResponse;
 import com.example.cbs_mvp.repo.CandidateRepository;
+
+import com.example.cbs_mvp.repo.PricingResultHistoryRepository;
 import com.example.cbs_mvp.repo.PricingResultRepository;
 
 class CandidateServiceTest {
@@ -24,6 +26,7 @@ class CandidateServiceTest {
         void priceCandidate_profitGatePass_setsDraftReady() {
                 CandidateRepository candidateRepo = mock(CandidateRepository.class);
                 PricingResultRepository pricingRepo = mock(PricingResultRepository.class);
+                PricingResultHistoryRepository historyRepo = mock(PricingResultHistoryRepository.class);
                 PricingCalculator calculator = mock(PricingCalculator.class);
                 GateService gateService = mock(GateService.class);
                 SystemFlagService flags = mock(SystemFlagService.class);
@@ -31,7 +34,8 @@ class CandidateServiceTest {
                 DraftService draftService = mock(DraftService.class);
 
                 CandidateService service = new CandidateService(
-                                candidateRepo, pricingRepo, calculator, gateService, flags, transitions, draftService);
+                                candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
+                                draftService);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(1L);
@@ -74,6 +78,7 @@ class CandidateServiceTest {
         void priceCandidate_profitGatePass_autoDraft_callsCreateDraft() {
                 CandidateRepository candidateRepo = mock(CandidateRepository.class);
                 PricingResultRepository pricingRepo = mock(PricingResultRepository.class);
+                PricingResultHistoryRepository historyRepo = mock(PricingResultHistoryRepository.class);
                 PricingCalculator calculator = mock(PricingCalculator.class);
                 GateService gateService = mock(GateService.class);
                 SystemFlagService flags = mock(SystemFlagService.class);
@@ -81,7 +86,8 @@ class CandidateServiceTest {
                 DraftService draftService = mock(DraftService.class);
 
                 CandidateService service = new CandidateService(
-                                candidateRepo, pricingRepo, calculator, gateService, flags, transitions, draftService);
+                                candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
+                                draftService);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(4L);
@@ -123,6 +129,7 @@ class CandidateServiceTest {
         void priceCandidate_profitGateFail_setsRejected() {
                 CandidateRepository candidateRepo = mock(CandidateRepository.class);
                 PricingResultRepository pricingRepo = mock(PricingResultRepository.class);
+                PricingResultHistoryRepository historyRepo = mock(PricingResultHistoryRepository.class);
                 PricingCalculator calculator = mock(PricingCalculator.class);
                 GateService gateService = mock(GateService.class);
                 SystemFlagService flags = mock(SystemFlagService.class);
@@ -130,7 +137,8 @@ class CandidateServiceTest {
                 DraftService draftService = mock(DraftService.class);
 
                 CandidateService service = new CandidateService(
-                                candidateRepo, pricingRepo, calculator, gateService, flags, transitions, draftService);
+                                candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
+                                draftService);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(2L);
@@ -171,6 +179,7 @@ class CandidateServiceTest {
         void priceCandidate_cashGateFail_setsRejected() {
                 CandidateRepository candidateRepo = mock(CandidateRepository.class);
                 PricingResultRepository pricingRepo = mock(PricingResultRepository.class);
+                PricingResultHistoryRepository historyRepo = mock(PricingResultHistoryRepository.class);
                 PricingCalculator calculator = mock(PricingCalculator.class);
                 GateService gateService = mock(GateService.class);
                 SystemFlagService flags = mock(SystemFlagService.class);
@@ -178,7 +187,8 @@ class CandidateServiceTest {
                 DraftService draftService = mock(DraftService.class);
 
                 CandidateService service = new CandidateService(
-                                candidateRepo, pricingRepo, calculator, gateService, flags, transitions, draftService);
+                                candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
+                                draftService);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(3L);

@@ -97,6 +97,20 @@ ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_weight_kg NUMERIC(6,3)
 ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_intl_ship_yen NUMERIC(12,2);
 ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS used_fee_rate NUMERIC(6,4);
 
+-- 3b) pricing_results_history (履歴保持用)
+CREATE TABLE IF NOT EXISTS pricing_results_history (
+  history_id BIGSERIAL PRIMARY KEY,
+  candidate_id BIGINT NOT NULL, -- FKなしでもよいが、分析用に候補IDは必須
+  pricing_id BIGINT,            -- 元のPricingID（あれば）
+  fx_rate NUMERIC(10,4),
+  sell_price_usd NUMERIC(12,2),
+  total_cost_yen NUMERIC(12,2),
+  profit_yen NUMERIC(12,2),
+  profit_rate NUMERIC(6,4),
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_pricing_history_candidate ON pricing_results_history(candidate_id);
+
 -- 4) ebay_drafts
 CREATE TABLE IF NOT EXISTS ebay_drafts (
   draft_id BIGSERIAL PRIMARY KEY,

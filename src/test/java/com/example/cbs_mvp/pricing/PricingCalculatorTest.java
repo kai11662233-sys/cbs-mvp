@@ -29,6 +29,10 @@ class PricingCalculatorTest {
         Mockito.when(flags.get("DEFAULT_WEIGHT_KG")).thenReturn("1.500");
         Mockito.when(flags.get("DEFAULT_SIZE_TIER")).thenReturn("XL");
 
+        // Fix: mock rule repo to return empty list or else NPE in Calculator
+        Mockito.when(repo.findAll(Mockito.any(org.springframework.data.domain.Sort.class)))
+                .thenReturn(java.util.Collections.emptyList());
+
         ShipCostTable ship = new ShipCostTable();
         PricingCalculator calc = new PricingCalculator(ship, flags, repo); // Constructor updated
 
@@ -67,6 +71,9 @@ class PricingCalculatorTest {
         Mockito.when(flags.get("PROFIT_MIN_RATE")).thenReturn("0.20");
         Mockito.when(flags.get("DEFAULT_WEIGHT_KG")).thenReturn("1.0");
         Mockito.when(flags.get("DEFAULT_SIZE_TIER")).thenReturn("M");
+
+        Mockito.when(repo.findAll(Mockito.any(org.springframework.data.domain.Sort.class)))
+                .thenReturn(java.util.Collections.emptyList());
 
         ShipCostTable ship = new ShipCostTable();
         PricingCalculator calc = new PricingCalculator(ship, flags, repo);

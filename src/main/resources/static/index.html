@@ -1400,10 +1400,10 @@
                     },
                     body: JSON.stringify({
                         candidateId: id ? parseInt(id) : null,
-                        sourcePriceYen: parseFloat(sourcePrice),
-                        weightKg: parseFloat(weight),
+                        sourcePriceYen: sourcePrice ? parseFloat(sourcePrice) : null,
+                        weightKg: weight ? parseFloat(weight) : null,
                         sizeTier: size,
-                        fxRate: parseFloat(fxRate),
+                        fxRate: fxRate ? parseFloat(fxRate) : null,
                         targetSellUsd: targetSell ? parseFloat(targetSell) : null
                     })
                 });
