@@ -16,4 +16,8 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
     List<Candidate> findByStateIn(List<String> states, Pageable pageable);
 
     Optional<Candidate> findBySourceUrl(String sourceUrl);
+
+    long countByState(String state);
+
+    long countByStateIn(List<String> states);
 }

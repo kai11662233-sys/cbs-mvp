@@ -31,7 +31,8 @@ public class CandidateCsvImportController {
     @PostMapping(value = "/import-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> importCsv(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(value = "skipDuplicates", defaultValue = "false") boolean skipDuplicates) {
+            @RequestParam(value = "skipDuplicates", defaultValue = "false") boolean skipDuplicates,
+            @RequestParam(value = "autoFilterProfit", defaultValue = "false") boolean autoFilterProfit) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("error", "File is required"));
@@ -39,7 +40,7 @@ public class CandidateCsvImportController {
 
         try {
             CandidateCsvImportService.ImportResult result = csvImportService.importFromCsv(
-                    file.getInputStream(), skipDuplicates);
+                    file.getInputStream(), skipDuplicates, autoFilterProfit);
 
             return ResponseEntity.ok(Map.of(
                     "successCount", result.successCount(),

@@ -28,6 +28,8 @@ public class CandidateCsvImportService {
 
     private final CandidateRepository candidateRepo;
     private final StateTransitionService transitions;
+    private final com.example.cbs_mvp.service.CandidateService candidateService;
+    private final com.example.cbs_mvp.fx.FxRateService fxRateService;
 
     /**
      * CSVからCandidateを一括インポート
@@ -35,15 +37,27 @@ public class CandidateCsvImportService {
      * CSV形式 (ヘッダー必須):
      * sourceUrl,sourcePriceYen,weightKg,sizeTier,title
      * 
-     * @param skipDuplicates true: 重複URLはスキップして成功カウント、false: エラーとして報告
+     * @param skipDuplicates   true: 重複URLはスキップして成功カウント、false: エラーとして報告
+     * @param autoFilterProfit true: 利益計算を行い、基準未満ならREJECTEDにする
      * @return インポート結果
      */
     @Transactional
-    public ImportResult importFromCsv(InputStream inputStream, boolean skipDuplicates) {
+    public ImportResult importFromCsv(InputStream inputStream, boolean skipDuplicates, boolean autoFilterProfit) {
         List<String> errors = new ArrayList<>();
         int successCount = 0;
         int skippedCount = 0;
         int lineNumber = 0;
+
+        // For auto-filter, we need FX rate
+        BigDecimal fxRate = null;
+        if (autoFilterProfit) {
+            var fxRes = fxRateService.getCurrentRate();
+            if (fxRes == null || !fxRes.isSuccess()) {
+                return new ImportResult(0, 0, 1, List.of("Auto-filter enabled but failed to get FX rate: "
+                        + (fxRes != null ? fxRes.error() : "Unknown")));
+            }
+            fxRate = fxRes.rate();
+        }
 
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
@@ -148,7 +162,7 @@ public class CandidateCsvImportService {
                     candidate.setSizeTier(sizeTier);
                     candidate.setState("CANDIDATE");
 
-                    candidateRepo.save(candidate);
+                    candidate = candidateRepo.save(candidate);
 
                     transitions.log(
                             "CANDIDATE",
@@ -159,6 +173,19 @@ public class CandidateCsvImportService {
                             "imported from CSV line " + lineNumber,
                             "SYSTEM",
                             java.util.UUID.randomUUID().toString().replace("-", ""));
+
+                    // Auto-Filter Logic
+                    if (autoFilterProfit) {
+                        try {
+                            // Run pricing (sets state to REJECTED or DRAFT_READY)
+                            candidateService.priceCandidate(candidate.getCandidateId(), fxRate, null, false);
+                        } catch (Exception e) {
+                            // Log error but count as success for import (maybe warn?)
+                            log.error("Auto-filter failed for candidate {}", candidate.getCandidateId(), e);
+                            errors.add("Line " + lineNumber + ": Saved, but auto-filter failed: " + e.getMessage());
+                            // If pricing fails, it stays as CANDIDATE, which is safe fall-back
+                        }
+                    }
 
                     successCount++;
 

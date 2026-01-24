@@ -174,6 +174,47 @@ public class CandidateService {
         return new BigDecimal(v);
     }
 
+    @Transactional
+    public void recalcAllActiveCandidates(BigDecimal newFxRate) {
+        // 対象: CANDIDATE, DRAFT_READY
+        java.util.List<String> states = java.util.Arrays.asList("CANDIDATE", "DRAFT_READY");
+        java.util.List<Candidate> candidates = candidateRepo.findByStateIn(states,
+                org.springframework.data.domain.Pageable.unpaged());
+
+        org.slf4j.LoggerFactory.getLogger(CandidateService.class).info(
+                "Starting FX Auto-Recalc for {} candidates. New Rate: {}", candidates.size(), newFxRate);
+
+        for (Candidate c : candidates) {
+            try {
+                // 既存のPricingResultから以前の販売価格(USD)を取得して維持する
+                BigDecimal targetSell = null;
+                java.util.Optional<PricingResult> prOpt = pricingRepo.findByCandidateId(c.getCandidateId());
+                if (prOpt.isPresent()) {
+                    targetSell = prOpt.get().getSellPriceUsd();
+                }
+
+                // 再計算 (autoDraft=false: 勝手にドラフトは作らない)
+                PricingResult newRes = priceCandidate(c.getCandidateId(), newFxRate, targetSell, false);
+
+                // もしリジェクトされた場合、理由を FX_VOLATILITY (または詳細) に更新したい場合はここで上書き可能
+                // ただし priceCandidate 内で既に理由コード(GATE_PROFIT等)がセットされている。
+                // FX変動によるものだと明示したいなら、ここでもう一度saveする手もあるが、
+                // 一旦はGATE_PROFIT等の標準理由で十分。
+
+                if (!newRes.isGateProfitOk()) {
+                    // ログだけ残す
+                    org.slf4j.LoggerFactory.getLogger(CandidateService.class).info(
+                            "Candidate {} rejected after FX update (Propfit Gate NG). Profit: {}",
+                            c.getCandidateId(), newRes.getProfitYen());
+                }
+
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(CandidateService.class).error(
+                        "Failed to recalc candidate {} during FX update", c.getCandidateId(), e);
+            }
+        }
+    }
+
     private static String cid() {
         return UUID.randomUUID().toString().replace("-", "");
     }

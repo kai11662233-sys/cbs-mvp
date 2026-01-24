@@ -98,4 +98,37 @@ public class CandidateController {
         public BigDecimal targetSellUsd;
         public Boolean autoDraft;
     }
+
+    @PostMapping("/bulk/price-and-draft")
+    public ResponseEntity<?> bulkPriceAndDraft(@RequestBody BulkPricingRequest req) {
+        if (req == null || req.candidateIds == null || req.candidateIds.isEmpty() || req.fxRate == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "candidateIds and fxRate are required"));
+        }
+
+        int successCount = 0;
+        int failureCount = 0;
+        java.util.List<String> errors = new java.util.ArrayList<>();
+
+        for (Long id : req.candidateIds) {
+            try {
+                // Auto-draft if requested
+                candidateService.priceCandidate(id, req.fxRate, null, req.autoDraft != null && req.autoDraft);
+                successCount++;
+            } catch (Exception e) {
+                failureCount++;
+                errors.add("ID " + id + ": " + e.getMessage());
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "successCount", successCount,
+                "failureCount", failureCount,
+                "errors", errors));
+    }
+
+    public static class BulkPricingRequest {
+        public java.util.List<Long> candidateIds;
+        public BigDecimal fxRate;
+        public Boolean autoDraft;
+    }
 }
