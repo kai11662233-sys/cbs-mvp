@@ -30,6 +30,7 @@ public class FxRateService {
     private final SystemFlagService flagService;
     private final WebClient.Builder webClientBuilder;
     private final FxRateHistoryRepository historyRepo;
+    private final com.example.cbs_mvp.service.CandidateService candidateService;
 
     @Value("${fx.api-key:}")
     private String apiKey;
@@ -75,6 +76,15 @@ public class FxRateService {
             log.info("FX rate updated: {} {} = {} {}{}",
                     "1", baseCurrency, rate, targetCurrency,
                     isAnomaly ? " [⚠️ ANOMALY DETECTED]" : "");
+
+            // Trigger Auto-Recalc
+            try {
+                if (candidateService != null) {
+                    candidateService.recalcAllActiveCandidates(rate);
+                }
+            } catch (Exception e) {
+                log.error("Failed to trigger auto-recalc", e);
+            }
 
             return new FxRateResult(rate, Instant.now(), null);
 

@@ -216,3 +216,24 @@ CREATE TABLE IF NOT EXISTS fx_rate_history (
   is_anomaly BOOLEAN NOT NULL DEFAULT FALSE,
   fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 11) pricing_rules
+CREATE TABLE IF NOT EXISTS pricing_rules (
+  rule_id BIGSERIAL PRIMARY KEY,
+  condition_type VARCHAR(20) NOT NULL CHECK (condition_type IN ('SOURCE_PRICE', 'WEIGHT')),
+  condition_min NUMERIC(12,2),
+  condition_max NUMERIC(12,2),
+  target_field VARCHAR(20) NOT NULL CHECK (target_field IN ('PROFIT_MIN_YEN', 'PROFIT_MIN_RATE')),
+  adjustment_value NUMERIC(12,2) NOT NULL,
+  priority INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Data (Rules)
+-- Rule 1: High Price items (> 10000) -> Lower Profit Rate (15%) OK
+INSERT INTO pricing_rules (condition_type, condition_min, condition_max, target_field, adjustment_value, priority)
+VALUES ('SOURCE_PRICE', 10000, NULL, 'PROFIT_MIN_RATE', 0.15, 10);
+
+-- Rule 2: Low Price items (< 3000) -> Higher Profit Rate (30%) Required
+INSERT INTO pricing_rules (condition_type, condition_min, condition_max, target_field, adjustment_value, priority)
+VALUES ('SOURCE_PRICE', 0, 3000, 'PROFIT_MIN_RATE', 0.30, 20);
