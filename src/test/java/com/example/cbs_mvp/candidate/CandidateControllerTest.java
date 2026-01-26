@@ -16,6 +16,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 
+import com.example.cbs_mvp.dto.BulkPricingRequest;
 import com.example.cbs_mvp.repo.CandidateRepository;
 import com.example.cbs_mvp.service.CandidateService;
 
@@ -27,10 +28,10 @@ class CandidateControllerTest {
         CandidateRepository candidateRepo = mock(CandidateRepository.class);
         CandidateController controller = new CandidateController(candidateService, candidateRepo);
 
-        CandidateController.BulkPricingRequest req = new CandidateController.BulkPricingRequest();
-        req.candidateIds = List.of(1L, 2L, 3L);
-        req.fxRate = new BigDecimal("150.0");
-        req.autoDraft = true;
+        BulkPricingRequest req = new BulkPricingRequest();
+        req.setCandidateIds(List.of(1L, 2L, 3L));
+        req.setFxRate(new BigDecimal("150.0"));
+        req.setAutoDraft(true);
 
         ResponseEntity<?> res = controller.bulkPriceAndDraft(req);
 
@@ -40,9 +41,9 @@ class CandidateControllerTest {
         assertEquals(3, body.get("successCount"));
         assertEquals(0, body.get("failureCount"));
 
-        verify(candidateService, times(1)).priceCandidate(1L, req.fxRate, null, true);
-        verify(candidateService, times(1)).priceCandidate(2L, req.fxRate, null, true);
-        verify(candidateService, times(1)).priceCandidate(3L, req.fxRate, null, true);
+        verify(candidateService, times(1)).priceCandidate(1L, req.getFxRate(), null, true);
+        verify(candidateService, times(1)).priceCandidate(2L, req.getFxRate(), null, true);
+        verify(candidateService, times(1)).priceCandidate(3L, req.getFxRate(), null, true);
     }
 
     @Test
@@ -51,11 +52,10 @@ class CandidateControllerTest {
         CandidateRepository candidateRepo = mock(CandidateRepository.class);
         CandidateController controller = new CandidateController(candidateService, candidateRepo);
 
-        CandidateController.BulkPricingRequest req = new CandidateController.BulkPricingRequest();
-        req.candidateIds = List.of(1L, 2L);
-        req.fxRate = new BigDecimal("150.0");
+        BulkPricingRequest req = new BulkPricingRequest();
+        req.setCandidateIds(List.of(1L, 2L));
+        req.setFxRate(new BigDecimal("150.0"));
 
-        // Fail for ID 2
         // Fail for ID 2
         doThrow(new RuntimeException("Pricing failed")).when(candidateService).priceCandidate(eq(2L), any(), any(),
                 anyBoolean());

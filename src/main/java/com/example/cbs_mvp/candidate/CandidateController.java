@@ -1,12 +1,10 @@
 package com.example.cbs_mvp.candidate;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,10 +14,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.cbs_mvp.dto.BulkPricingRequest;
+import com.example.cbs_mvp.dto.CandidatePricingRequest;
+import com.example.cbs_mvp.dto.CreateCandidateRequest;
 import com.example.cbs_mvp.entity.Candidate;
 import com.example.cbs_mvp.entity.PricingResult;
 import com.example.cbs_mvp.repo.CandidateRepository;
 import com.example.cbs_mvp.service.CandidateService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/candidates")
@@ -45,74 +48,46 @@ public class CandidateController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CreateCandidateRequest req) {
-        if (req == null || req.sourceUrl == null || req.sourceUrl.isBlank() || req.sourcePriceYen == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "sourceUrl and sourcePriceYen are required"));
-        }
+    public ResponseEntity<?> create(@Valid @RequestBody CreateCandidateRequest req) {
         Candidate c = candidateService.createCandidate(
-                req.sourceUrl,
-                req.sourcePriceYen,
-                req.weightKg,
-                req.sizeTier,
-                req.memo);
+                req.getSourceUrl(),
+                req.getSourcePriceYen(),
+                req.getWeightKg(),
+                req.getSizeTier(),
+                req.getMemo());
         return ResponseEntity.ok(Map.of(
                 "candidateId", c.getCandidateId(),
                 "state", c.getState()));
     }
 
     @PostMapping("/{candidateId}/pricing")
-    public ResponseEntity<?> pricing(@PathVariable Long candidateId, @RequestBody CandidatePricingRequest req) {
-        if (req == null || req.fxRate == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "fxRate is required"));
-        }
-        try {
-            PricingResult pr = candidateService.priceCandidate(
-                    candidateId,
-                    req.fxRate,
-                    req.targetSellUsd,
-                    req.autoDraft != null && req.autoDraft // Default false
-            );
-            return ResponseEntity.ok(Map.of(
-                    "candidateId", pr.getCandidateId(),
-                    "gateProfitOk", pr.isGateProfitOk(),
-                    "gateCashOk", pr.isGateCashOk(),
-                    "totalCostYen", pr.getTotalCostYen(),
-                    "sellPriceUsd", pr.getSellPriceUsd(),
-                    "sellPriceYen", pr.getSellPriceYen()));
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", ex.getMessage()));
-        }
-    }
-
-    public static class CreateCandidateRequest {
-        public String sourceUrl;
-        public BigDecimal sourcePriceYen;
-        public BigDecimal weightKg;
-        public String sizeTier;
-        public String memo;
-    }
-
-    public static class CandidatePricingRequest {
-        public BigDecimal fxRate;
-        public BigDecimal targetSellUsd;
-        public Boolean autoDraft;
+    public ResponseEntity<?> pricing(@PathVariable Long candidateId, @Valid @RequestBody CandidatePricingRequest req) {
+        PricingResult pr = candidateService.priceCandidate(
+                candidateId,
+                req.getFxRate(),
+                req.getTargetSellUsd(),
+                req.getAutoDraft() != null && req.getAutoDraft() // Default false
+        );
+        return ResponseEntity.ok(Map.of(
+                "candidateId", pr.getCandidateId(),
+                "gateProfitOk", pr.isGateProfitOk(),
+                "gateCashOk", pr.isGateCashOk(),
+                "totalCostYen", pr.getTotalCostYen(),
+                "sellPriceUsd", pr.getSellPriceUsd(),
+                "sellPriceYen", pr.getSellPriceYen()));
     }
 
     @PostMapping("/bulk/price-and-draft")
-    public ResponseEntity<?> bulkPriceAndDraft(@RequestBody BulkPricingRequest req) {
-        if (req == null || req.candidateIds == null || req.candidateIds.isEmpty() || req.fxRate == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "candidateIds and fxRate are required"));
-        }
-
+    public ResponseEntity<?> bulkPriceAndDraft(@Valid @RequestBody BulkPricingRequest req) {
         int successCount = 0;
         int failureCount = 0;
         java.util.List<String> errors = new java.util.ArrayList<>();
 
-        for (Long id : req.candidateIds) {
+        for (Long id : req.getCandidateIds()) {
             try {
                 // Auto-draft if requested
-                candidateService.priceCandidate(id, req.fxRate, null, req.autoDraft != null && req.autoDraft);
+                candidateService.priceCandidate(id, req.getFxRate(), null,
+                        req.getAutoDraft() != null && req.getAutoDraft());
                 successCount++;
             } catch (Exception e) {
                 failureCount++;
@@ -124,11 +99,5 @@ public class CandidateController {
                 "successCount", successCount,
                 "failureCount", failureCount,
                 "errors", errors));
-    }
-
-    public static class BulkPricingRequest {
-        public java.util.List<Long> candidateIds;
-        public BigDecimal fxRate;
-        public Boolean autoDraft;
     }
 }
