@@ -32,6 +32,7 @@ public class DraftService {
     private final EbayClient ebayClient;
     private final KillSwitchService killSwitch;
     private final StateTransitionService transitions;
+    private final CandidateStateMachine stateMachine;
 
     public DraftService(
             CandidateRepository candidateRepo,
@@ -39,13 +40,15 @@ public class DraftService {
             EbayDraftRepository draftRepo,
             EbayClient ebayClient,
             KillSwitchService killSwitch,
-            StateTransitionService transitions) {
+            StateTransitionService transitions,
+            CandidateStateMachine stateMachine) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
         this.draftRepo = draftRepo;
         this.ebayClient = ebayClient;
         this.killSwitch = killSwitch;
         this.transitions = transitions;
+        this.stateMachine = stateMachine;
     }
 
     @Transactional
@@ -65,13 +68,24 @@ public class DraftService {
         PricingResult pr = pricingRepo.findByCandidateId(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("pricing result not found"));
 
-        // Freshness Check (Pricing must be newer than Candidate update, with small
-        // buffer)
-        // c.updatedAt is likely slightly after pr.createdAt due to priceCandidate logic
-        // ordering
-        long diffMillis = java.time.Duration.between(pr.getCreatedAt(), c.getUpdatedAt()).toMillis();
-        if (diffMillis > 2000) { // If candidate updated more than 2s after pricing
-            throw new IllegalStateException("pricing result is stale (candidate modified after pricing)");
+        // Freshness Check (Pricing must be consistent with Candidate)
+        if (c.getLastCalculatedAt() == null) {
+            throw new IllegalStateException("candidate has not been calculated");
+        }
+        // If candidate was updated AFTER calculation, it is stale.
+        // Allowing a tiny buffer (e.g. 100ms) might be needed if save order varies,
+        // but typically setLastCalculatedAt happens immediately before save.
+        // However, standard updatedAt is set @PreUpdate/PrePersist.
+        // In CandidateService, we set lastCalculatedAt, then save.
+        // @PreUpdate sets updatedAt to NOW.
+        // So updatedAt might be slightly AFTER lastCalculatedAt (milliseconds).
+        // Safest: updatedAt.isAfter(lastCalculatedAt.plusSeconds(1))?
+        // Or better: check if they are "significantly" different.
+        // If stale, updatedAt >> lastCalculatedAt.
+
+        long diffSeconds = java.time.Duration.between(c.getLastCalculatedAt(), c.getUpdatedAt()).getSeconds();
+        if (diffSeconds > 1) {
+            throw new IllegalStateException("pricing result is stale (candidate updated since last pricing)");
         }
 
         String sku = "CAND-" + candidateId;
@@ -106,6 +120,7 @@ public class DraftService {
             draft.setLastError(null);
             draftRepo.save(draft);
 
+            stateMachine.validate(c.getState(), "EBAY_DRAFT_CREATED");
             c.setState("EBAY_DRAFT_CREATED");
             c.setRejectReasonCode(null);
             c.setRejectReasonDetail(null);
@@ -125,6 +140,7 @@ public class DraftService {
             draft.setLastError(ex.getMessage());
             draftRepo.save(draft);
 
+            stateMachine.validate(c.getState(), "EBAY_DRAFT_FAILED");
             c.setState("EBAY_DRAFT_FAILED");
             c.setRejectReasonCode("EBAY_DRAFT_FAILED");
             c.setRejectReasonDetail(ex.getMessage());

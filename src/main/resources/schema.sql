@@ -96,6 +96,9 @@ ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_source_price_yen NUMER
 ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_weight_kg NUMERIC(6,3);
 ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS calc_intl_ship_yen NUMERIC(12,2);
 ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS used_fee_rate NUMERIC(6,4);
+ALTER TABLE pricing_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP;
+
+ALTER TABLE candidates ADD COLUMN IF NOT EXISTS last_calculated_at TIMESTAMP;
 
 -- 3b) pricing_results_history (履歴保持用)
 CREATE TABLE IF NOT EXISTS pricing_results_history (

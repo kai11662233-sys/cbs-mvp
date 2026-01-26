@@ -57,13 +57,20 @@ public class Candidate {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "last_calculated_at")
+    private LocalDateTime lastCalculatedAt;
+
     @PrePersist
     void prePersist() {
         LocalDateTime now = LocalDateTime.now();
-        if (createdAt == null) createdAt = now;
-        if (updatedAt == null) updatedAt = now;
-        if (sizeTier == null || sizeTier.isBlank()) sizeTier = "XL";
-        if (state == null || state.isBlank()) state = "CANDIDATE";
+        if (createdAt == null)
+            createdAt = now;
+        if (updatedAt == null)
+            updatedAt = now;
+        if (sizeTier == null || sizeTier.isBlank())
+            sizeTier = "XL";
+        if (state == null || state.isBlank())
+            state = "CANDIDATE";
     }
 
     @PreUpdate

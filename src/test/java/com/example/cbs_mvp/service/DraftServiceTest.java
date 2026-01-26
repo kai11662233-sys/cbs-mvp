@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -30,9 +31,10 @@ class DraftServiceTest {
         EbayClient ebayClient = mock(EbayClient.class);
         KillSwitchService killSwitch = mock(KillSwitchService.class);
         StateTransitionService transitions = mock(StateTransitionService.class);
+        CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
         DraftService service = new DraftService(
-                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions);
+                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions, stateMachine);
 
         Candidate candidate = new Candidate();
         candidate.setCandidateId(1L);
@@ -44,9 +46,9 @@ class DraftServiceTest {
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(1L)).thenReturn(Optional.of(candidate));
 
-        // Fix for freshness check NPE
-        candidate.setUpdatedAt(java.time.LocalDateTime.now());
-        pricing.setCreatedAt(java.time.LocalDateTime.now());
+        // Freshness Check setup
+        candidate.setLastCalculatedAt(LocalDateTime.now());
+        candidate.setUpdatedAt(LocalDateTime.now());
 
         when(pricingRepo.findByCandidateId(1L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-1")).thenReturn(Optional.empty());
@@ -70,9 +72,10 @@ class DraftServiceTest {
         EbayClient ebayClient = mock(EbayClient.class);
         KillSwitchService killSwitch = mock(KillSwitchService.class);
         StateTransitionService transitions = mock(StateTransitionService.class);
+        CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
         DraftService service = new DraftService(
-                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions);
+                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions, stateMachine);
 
         Candidate candidate = new Candidate();
         candidate.setCandidateId(2L);
@@ -84,9 +87,9 @@ class DraftServiceTest {
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(2L)).thenReturn(Optional.of(candidate));
 
-        // Fix for freshness check NPE
-        candidate.setUpdatedAt(java.time.LocalDateTime.now());
-        pricing.setCreatedAt(java.time.LocalDateTime.now());
+        // Freshness Check setup
+        candidate.setLastCalculatedAt(LocalDateTime.now());
+        candidate.setUpdatedAt(LocalDateTime.now());
 
         when(pricingRepo.findByCandidateId(2L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-2")).thenReturn(Optional.empty());
@@ -110,9 +113,10 @@ class DraftServiceTest {
         EbayClient ebayClient = mock(EbayClient.class);
         KillSwitchService killSwitch = mock(KillSwitchService.class);
         StateTransitionService transitions = mock(StateTransitionService.class);
+        CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
         DraftService service = new DraftService(
-                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions);
+                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions, stateMachine);
 
         when(killSwitch.isPaused()).thenReturn(true);
 
@@ -127,9 +131,10 @@ class DraftServiceTest {
         EbayClient ebayClient = mock(EbayClient.class);
         KillSwitchService killSwitch = mock(KillSwitchService.class);
         StateTransitionService transitions = mock(StateTransitionService.class);
+        CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
         DraftService service = new DraftService(
-                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions);
+                candidateRepo, pricingRepo, draftRepo, ebayClient, killSwitch, transitions, stateMachine);
 
         Candidate candidate = new Candidate();
         candidate.setCandidateId(3L);
@@ -147,9 +152,9 @@ class DraftServiceTest {
         when(killSwitch.isPaused()).thenReturn(false);
         when(candidateRepo.findById(3L)).thenReturn(Optional.of(candidate));
 
-        // Fix for freshness check NPE
-        candidate.setUpdatedAt(java.time.LocalDateTime.now());
-        pricing.setCreatedAt(java.time.LocalDateTime.now());
+        // Freshness Check setup
+        candidate.setLastCalculatedAt(LocalDateTime.now());
+        candidate.setUpdatedAt(LocalDateTime.now());
 
         when(pricingRepo.findByCandidateId(3L)).thenReturn(Optional.of(pricing));
         when(draftRepo.findBySku("CAND-3")).thenReturn(Optional.of(existingDraft));

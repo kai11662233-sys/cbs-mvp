@@ -32,10 +32,11 @@ class CandidateServiceTest {
                 SystemFlagService flags = mock(SystemFlagService.class);
                 StateTransitionService transitions = mock(StateTransitionService.class);
                 DraftService draftService = mock(DraftService.class);
+                CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
                 CandidateService service = new CandidateService(
                                 candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
-                                draftService);
+                                draftService, stateMachine);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(1L);
@@ -84,10 +85,11 @@ class CandidateServiceTest {
                 SystemFlagService flags = mock(SystemFlagService.class);
                 StateTransitionService transitions = mock(StateTransitionService.class);
                 DraftService draftService = mock(DraftService.class);
+                CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
                 CandidateService service = new CandidateService(
                                 candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
-                                draftService);
+                                draftService, stateMachine);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(4L);
@@ -135,10 +137,11 @@ class CandidateServiceTest {
                 SystemFlagService flags = mock(SystemFlagService.class);
                 StateTransitionService transitions = mock(StateTransitionService.class);
                 DraftService draftService = mock(DraftService.class);
+                CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
                 CandidateService service = new CandidateService(
                                 candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
-                                draftService);
+                                draftService, stateMachine);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(2L);
@@ -185,10 +188,11 @@ class CandidateServiceTest {
                 SystemFlagService flags = mock(SystemFlagService.class);
                 StateTransitionService transitions = mock(StateTransitionService.class);
                 DraftService draftService = mock(DraftService.class);
+                CandidateStateMachine stateMachine = mock(CandidateStateMachine.class);
 
                 CandidateService service = new CandidateService(
                                 candidateRepo, pricingRepo, historyRepo, calculator, gateService, flags, transitions,
-                                draftService);
+                                draftService, stateMachine);
 
                 Candidate candidate = new Candidate();
                 candidate.setCandidateId(3L);

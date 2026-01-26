@@ -2,6 +2,7 @@ package com.example.cbs_mvp.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ public class CandidateService {
     private final SystemFlagService flags;
     private final StateTransitionService transitions;
     private final DraftService draftService;
+    private final CandidateStateMachine stateMachine;
 
     public CandidateService(
             CandidateRepository candidateRepo,
@@ -37,7 +39,8 @@ public class CandidateService {
             GateService gateService,
             SystemFlagService flags,
             StateTransitionService transitions,
-            DraftService draftService) {
+            DraftService draftService,
+            CandidateStateMachine stateMachine) {
         this.candidateRepo = candidateRepo;
         this.pricingRepo = pricingRepo;
         this.historyRepo = historyRepo;
@@ -46,6 +49,7 @@ public class CandidateService {
         this.flags = flags;
         this.transitions = transitions;
         this.draftService = draftService;
+        this.stateMachine = stateMachine;
     }
 
     @Transactional
@@ -129,14 +133,17 @@ public class CandidateService {
 
         String from = c.getState();
         if (pr.isGateProfitOk() && gateCashOk) {
+            stateMachine.validate(from, "DRAFT_READY");
             c.setState("DRAFT_READY");
             c.setRejectReasonCode(null);
             c.setRejectReasonDetail(null);
         } else {
+            stateMachine.validate(from, "REJECTED");
             c.setState("REJECTED");
             c.setRejectReasonCode(reasonCode(pr.isGateProfitOk(), gateCashOk));
             c.setRejectReasonDetail(reasonDetail(pr.isGateProfitOk(), gateCashOk));
         }
+        c.setLastCalculatedAt(LocalDateTime.now());
         candidateRepo.save(c);
         transitions.log("CANDIDATE", c.getCandidateId(), from, c.getState(), c.getRejectReasonCode(),
                 c.getRejectReasonDetail(), "SYSTEM", cid());
