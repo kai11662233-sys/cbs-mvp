@@ -254,3 +254,40 @@ VALUES ('SOURCE_PRICE', 10000, NULL, 'PROFIT_MIN_RATE', 0.15, 10);
 -- Rule 2: Low Price items (< 3000) -> Higher Profit Rate (30%) Required
 INSERT INTO pricing_rules (condition_type, condition_min, condition_max, target_field, adjustment_value, priority)
 VALUES ('SOURCE_PRICE', 0, 3000, 'PROFIT_MIN_RATE', 0.30, 20);
+
+-- 12) discovery_items（Discovery機能用）
+CREATE TABLE IF NOT EXISTS discovery_items (
+  id BIGSERIAL PRIMARY KEY,
+  source_url TEXT NOT NULL,
+  source_domain TEXT,
+  source_type TEXT DEFAULT 'OTHER',  -- OFFICIAL/RETAIL/MALL/AMAZON/C2C/OTHER
+  title TEXT,
+  condition TEXT DEFAULT 'UNKNOWN',  -- NEW/USED/UNKNOWN
+  category_hint TEXT,
+  price_yen NUMERIC(12,2) NOT NULL,
+  shipping_yen NUMERIC(12,2),
+  weight_kg NUMERIC(6,3),
+  safety_score INT NOT NULL DEFAULT 100,
+  profit_score INT NOT NULL DEFAULT 0,
+  freshness_score INT NOT NULL DEFAULT 0,
+  overall_score INT NOT NULL DEFAULT 0,
+  risk_flags JSONB NOT NULL DEFAULT '[]'::jsonb,
+  safety_breakdown JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_checked_at TIMESTAMPTZ,
+  snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'NEW',  -- NEW/CHECKED/OK/NG/DRAFTED/ARCHIVED
+  linked_candidate_id BIGINT,
+  linked_draft_id BIGINT,
+  notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_discovery_items_overall_score ON discovery_items(overall_score DESC);
+CREATE INDEX IF NOT EXISTS idx_discovery_items_condition ON discovery_items(condition);
+CREATE INDEX IF NOT EXISTS idx_discovery_items_status ON discovery_items(status);
+CREATE INDEX IF NOT EXISTS idx_discovery_items_last_checked ON discovery_items(last_checked_at);
+
+-- Discovery用の初期閾値設定
+INSERT INTO system_flags(key, value) VALUES ('DISCOVERY_MIN_SAFETY', '50') ON CONFLICT (key) DO NOTHING;
+INSERT INTO system_flags(key, value) VALUES ('DISCOVERY_FRESHNESS_REQUIRED_HOURS', '24') ON CONFLICT (key) DO NOTHING;
