@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.cbs_mvp.dto.discovery.CreateDiscoveryItemRequest;
+
 /**
  * Discovery機能のメインサービス
  * - create: 新規登録 + 初期スコア計算
@@ -197,19 +199,5 @@ public class DiscoveryService {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    // ----- DTO -----
-
-    public record CreateDiscoveryItemRequest(
-            String sourceUrl,
-            String title,
-            String condition,
-            String sourceType,
-            String categoryHint,
-            BigDecimal priceYen,
-            BigDecimal shippingYen,
-            BigDecimal weightKg,
-            String notes) {
     }
 }

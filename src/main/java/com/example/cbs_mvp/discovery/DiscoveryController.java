@@ -17,8 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.cbs_mvp.discovery.DiscoveryDraftOrchestrator.DraftConditionException;
 import com.example.cbs_mvp.discovery.DiscoveryDraftOrchestrator.DraftFromDiscoveryResult;
-import com.example.cbs_mvp.discovery.DiscoveryService.CreateDiscoveryItemRequest;
+import com.example.cbs_mvp.dto.discovery.CreateDiscoveryItemRequest;
+import com.example.cbs_mvp.dto.discovery.DraftRequest;
 import com.example.cbs_mvp.ops.OpsKeyService;
+
+import jakarta.validation.Valid;
 
 /**
  * Discovery API Controller
@@ -48,31 +51,13 @@ public class DiscoveryController {
     @PostMapping("/items")
     public ResponseEntity<?> createItem(
             @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
-            @RequestBody CreateItemRequest body) {
+            @Valid @RequestBody CreateDiscoveryItemRequest body) {
 
         if (!isAuthorized(opsKey)) {
             return unauthorized();
         }
 
-        if (body.sourceUrl() == null || body.sourceUrl().isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "sourceUrl is required"));
-        }
-        if (body.priceYen() == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "priceYen is required"));
-        }
-
-        CreateDiscoveryItemRequest req = new CreateDiscoveryItemRequest(
-                body.sourceUrl(),
-                body.title(),
-                body.condition(),
-                body.sourceType(),
-                body.categoryHint(),
-                body.priceYen(),
-                body.shippingYen(),
-                body.weightKg(),
-                body.notes());
-
-        DiscoveryItem item = discoveryService.create(req);
+        DiscoveryItem item = discoveryService.create(body);
 
         return ResponseEntity.ok(Map.of(
                 "id", item.getId(),
@@ -161,7 +146,7 @@ public class DiscoveryController {
     public ResponseEntity<?> createDraft(
             @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
             @PathVariable Long id,
-            @RequestBody(required = false) DraftRequest body) {
+            @Valid @RequestBody(required = false) DraftRequest body) {
 
         if (!isAuthorized(opsKey)) {
             return unauthorized();
@@ -256,24 +241,5 @@ public class DiscoveryController {
                 Map.entry("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : ""),
                 Map.entry("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : ""),
                 Map.entry("isDraftable", item.isDraftable()));
-    }
-
-    // ----- Request DTOs -----
-
-    public record CreateItemRequest(
-            String sourceUrl,
-            String title,
-            String condition,
-            String sourceType,
-            String categoryHint,
-            BigDecimal priceYen,
-            BigDecimal shippingYen,
-            BigDecimal weightKg,
-            String notes) {
-    }
-
-    public record DraftRequest(
-            BigDecimal fxRate,
-            BigDecimal targetSellUsd) {
     }
 }

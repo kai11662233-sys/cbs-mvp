@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
-import com.example.cbs_mvp.discovery.DiscoveryService.CreateDiscoveryItemRequest;
+import com.example.cbs_mvp.dto.discovery.CreateDiscoveryItemRequest;
 import com.microsoft.playwright.Browser;
 import com.microsoft.playwright.BrowserType;
 import com.microsoft.playwright.Page;

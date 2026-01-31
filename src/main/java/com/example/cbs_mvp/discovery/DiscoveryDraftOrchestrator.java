@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.cbs_mvp.entity.Candidate;
 import com.example.cbs_mvp.entity.EbayDraft;
 import com.example.cbs_mvp.ops.KillSwitchService;
+import com.example.cbs_mvp.ops.SystemFlagService;
 import com.example.cbs_mvp.service.CandidateService;
 import com.example.cbs_mvp.service.DraftService;
 import com.example.cbs_mvp.service.StateTransitionService;
@@ -22,12 +23,15 @@ import com.example.cbs_mvp.service.StateTransitionService;
 public class DiscoveryDraftOrchestrator {
 
     private static final Logger log = LoggerFactory.getLogger(DiscoveryDraftOrchestrator.class);
+    private static final String FLAG_MIN_SAFETY = "DISCOVERY_MIN_SAFETY";
+    private static final int DEFAULT_MIN_SAFETY = 50;
 
     private final DiscoveryService discoveryService;
     private final DiscoveryItemRepository discoveryRepo;
     private final CandidateService candidateService;
     private final DraftService draftService;
     private final KillSwitchService killSwitch;
+    private final SystemFlagService systemFlagService;
     private final StateTransitionService transitions;
 
     public DiscoveryDraftOrchestrator(
@@ -36,12 +40,14 @@ public class DiscoveryDraftOrchestrator {
             CandidateService candidateService,
             DraftService draftService,
             KillSwitchService killSwitch,
+            SystemFlagService systemFlagService,
             StateTransitionService transitions) {
         this.discoveryService = discoveryService;
         this.discoveryRepo = discoveryRepo;
         this.candidateService = candidateService;
         this.draftService = draftService;
         this.killSwitch = killSwitch;
+        this.systemFlagService = systemFlagService;
         this.transitions = transitions;
     }
 
@@ -83,8 +89,8 @@ public class DiscoveryDraftOrchestrator {
                     "禁止カテゴリに該当するためDraft不可です: " + item.getCategoryHint());
         }
 
-        // 4) Safety閾値チェック（デフォルト50）
-        int minSafety = 50; // TODO: system_flagsから取得
+        // 4) Safety閾値チェック（SystemFlagから取得、デフォルト50）
+        int minSafety = getMinSafety();
         if (item.getSafetyScore() < minSafety) {
             throw new DraftConditionException("SAFETY_TOO_LOW",
                     String.format("SafetyScore(%d)が閾値(%d)未満です", item.getSafetyScore(), minSafety));
@@ -151,6 +157,18 @@ public class DiscoveryDraftOrchestrator {
 
     private static String cid() {
         return UUID.randomUUID().toString().replace("-", "");
+    }
+
+    private int getMinSafety() {
+        String value = systemFlagService.get(FLAG_MIN_SAFETY);
+        if (value != null && !value.isBlank()) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                // ignore, return default
+            }
+        }
+        return DEFAULT_MIN_SAFETY;
     }
 
     // ----- Result / Exception -----
