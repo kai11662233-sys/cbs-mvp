@@ -37,4 +37,29 @@ public class StubEbayOrderClient implements EbayOrderClient {
     private static String nz(String v) {
         return v == null ? "" : v.trim();
     }
+
+    @Override
+    public java.util.Map<String, Object> getOrder(String ebayOrderKey) {
+        if (ebayOrderKey == null)
+            return java.util.Map.of();
+
+        // スタブ実装: SKUは "TEST-SKU-" + ebayOrderKey とする
+        String sku = "TEST-SKU-" + ebayOrderKey;
+
+        return java.util.Map.of(
+                "orderId", ebayOrderKey,
+                "lineItems", java.util.List.of(
+                        java.util.Map.of(
+                                "lineItemId", "1001",
+                                "sku", sku,
+                                "quantity", 1,
+                                "lineItemCost", java.util.Map.of(
+                                        "value", "100.00",
+                                        "currency", "USD"))),
+                "pricingSummary", java.util.Map.of(
+                        "total", java.util.Map.of("value", "110.00", "currency", "USD")),
+                "paymentSummary", java.util.Map.of(
+                        "payments", java.util.List.of(
+                                java.util.Map.of("paymentDate", java.time.Instant.now().toString()))));
+    }
 }

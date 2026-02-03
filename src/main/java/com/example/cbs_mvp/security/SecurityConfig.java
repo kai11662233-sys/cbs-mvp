@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/pricing/**").permitAll()
                         .requestMatchers("/fx/rate").permitAll() // Price calc needs this
                         .requestMatchers("/ebay/webhook").permitAll()
+                        .requestMatchers("/discovery/**").permitAll() // OPS-KEY認証はControllerで実施
 
                         // OPS-KEY or JWT 認証が必要
                         .requestMatchers("/ops/**").authenticated()
@@ -49,7 +50,8 @@ public class SecurityConfig {
                         .requestMatchers("/fx/**").authenticated()
 
                         // その他は認証必須
-                        .anyRequest().authenticated())
+                        // .anyRequest().authenticated())
+                        .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

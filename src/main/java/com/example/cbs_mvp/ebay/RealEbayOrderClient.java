@@ -111,6 +111,26 @@ public class RealEbayOrderClient implements EbayOrderClient {
         }
     }
 
+    @Override
+    public Map<String, Object> getOrder(String ebayOrderKey) {
+        log.info("GET order orderKey={}", ebayOrderKey);
+        String url = config.getApiBase() + "/sell/fulfillment/v1/order/" + ebayOrderKey;
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = webClient()
+                    .get()
+                    .uri(url)
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + oauthService.getAccessToken())
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block();
+            return response;
+        } catch (Exception e) {
+            log.error("GET order failed orderKey={}", ebayOrderKey, e);
+            throw new EbayOrderClientException("getOrder failed: " + e.getMessage(), true);
+        }
+    }
+
     private WebClient webClient() {
         return webClientBuilder
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
