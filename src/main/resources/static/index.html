@@ -1722,15 +1722,57 @@
                 draftBtn.disabled = !item.isDraftable || item.status === 'DRAFTED';
                 if (item.status === 'DRAFTED') {
                     draftBtn.textContent = '✓ Draft済み';
+                    document.getElementById('discoveryModalMsg').innerHTML = '';
                 } else {
                     draftBtn.textContent = '📝 Draft作成';
+                    // Gate Check
+                    await checkCashGate(item.priceYen, item.shippingYen || 0);
                 }
 
-                document.getElementById('discoveryModalMsg').innerHTML = '';
                 document.getElementById('discoveryModal').classList.add('active');
             } catch (e) {
                 alert('詳細の読み込みに失敗しました');
+                console.error(e);
             }
+        }
+
+        async function checkCashGate(priceYen, shippingYen) {
+            const cost = (priceYen || 0) + (shippingYen || 0);
+            const draftBtn = document.getElementById('d_draftBtn');
+            const msgDiv = document.getElementById('discoveryModalMsg');
+
+            msgDiv.innerHTML = '<span class="spinner"></span> 資金判定中...';
+            draftBtn.disabled = true;
+
+            try {
+                const res = await fetch('/cash/gate-check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ newCostEstimateTotalYen: cost })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.ok) {
+                    msgDiv.innerHTML = '';
+                    draftBtn.disabled = false;
+                } else {
+                    const failReason = data.capOk === false ? '信用枠不足' : '資金不足';
+                    const detail = data.wcAvailableYen !== undefined
+                        ? `(必要: ¥${cost.toLocaleString()} / 残高: ¥${filterInt(data.wcAvailableYen).toLocaleString()})`
+                        : '';
+                    msgDiv.innerHTML = `<div class="alert alert-warning">⚠️ ${failReason} ${detail}</div>`;
+                    draftBtn.disabled = true;
+                }
+            } catch (e) {
+                console.error(e);
+                msgDiv.innerHTML = '<div class="alert alert-danger">判定エラー</div>';
+            }
+        }
+
+        function filterInt(value) {
+            if (/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
+                return Number(value);
+            return NaN;
         }
 
         function closeDiscoveryModal() {

@@ -41,7 +41,7 @@ public class SecurityConfig {
 
                         // OPS-KEY or JWT 認証が必要
                         .requestMatchers("/ops/**").authenticated()
-                        .requestMatchers("/cash/**").authenticated()
+                        .requestMatchers("/cash/**").permitAll() // OpsKey check in Controller
                         .requestMatchers("/candidates/**").authenticated()
                         .requestMatchers("/orders/**").authenticated()
                         .requestMatchers("/drafts/**").authenticated()

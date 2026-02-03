@@ -45,8 +45,18 @@ public class GateService {
         BigDecimal cap = recentSales30d.multiply(wcCapRatio);
         BigDecimal totalCommitments = openCommitments.add(nz(newCostEstimateTotalYen));
 
+        // 純粋な現金余裕（信用枠を含まない）
+        BigDecimal pureCashAvailable = currentCash
+                .subtract(unconfirmedCost)
+                .subtract(refundReserve)
+                .subtract(openCommitments);
+
         boolean capOk = totalCommitments.compareTo(cap) <= 0;
-        boolean ok = capOk && wcAvailable.compareTo(nz(newCostEstimateTotalYen)) >= 0;
+        boolean coveredByCash = pureCashAvailable.compareTo(nz(newCostEstimateTotalYen)) >= 0;
+
+        // Cap制限は、現金が足りず信用枠に頼る場合の急拡大防止とする。
+        // 現金でフルカバーできるなら、Capを超えていても許可する。
+        boolean ok = (capOk || coveredByCash) && wcAvailable.compareTo(nz(newCostEstimateTotalYen)) >= 0;
 
         return new GateResult(ok, capOk, wcAvailable, refundReserve, openCommitments);
     }

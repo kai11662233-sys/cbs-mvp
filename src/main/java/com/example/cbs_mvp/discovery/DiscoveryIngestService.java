@@ -235,20 +235,20 @@ public class DiscoveryIngestService {
 
     private DiscoverySeed parseCsvLine(String line) {
         String[] cols = line.split(",", -1);
-        if (cols.length < 6) {
-            throw new IllegalArgumentException("Invalid CSV format: expected at least 6 columns");
+        if (cols.length < 5) {
+            throw new IllegalArgumentException("Invalid CSV format: expected at least 5 columns");
         }
 
         return new DiscoverySeed(
-                cols[0].trim(),
-                cols.length > 1 ? cols[1].trim() : null,
-                cols.length > 2 ? cols[2].trim() : null,
-                cols.length > 3 ? cols[3].trim() : null,
-                cols.length > 4 ? cols[4].trim() : null,
-                parseDecimal(cols[5]),
-                cols.length > 6 ? parseDecimal(cols[6]) : null,
-                cols.length > 7 ? parseDecimal(cols[7]) : null,
-                cols.length > 8 ? cols[8].trim() : null);
+                cols[0].trim(), // sourceUrl
+                cols.length > 1 ? cols[1].trim() : null, // title
+                cols.length > 4 ? cols[4].trim() : null, // condition
+                null, // sourceType
+                null, // categoryHint
+                cols.length > 2 ? parseDecimal(cols[2]) : null, // priceYen
+                null, // shippingYen
+                cols.length > 3 ? parseDecimal(cols[3]) : null, // weightKg
+                null); // notes
     }
 
     private BigDecimal parseDecimal(String s) {
