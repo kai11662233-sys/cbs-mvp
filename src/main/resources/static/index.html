@@ -850,8 +850,14 @@
                                     style="width: 60px; margin: 0;" onchange="loadDiscoveryRecommendations()">
                             </div>
                         </div>
-                        <button class="btn btn-outline btn-sm" onclick="loadDiscoveryRecommendations()">🔄 更新</button>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="file" id="discoveryCsvFile" accept=".csv" style="max-width: 200px;">
+                            <button class="btn btn-sm" onclick="uploadDiscoveryCsv()">📤 CSV Upload</button>
+                            <button class="btn btn-outline btn-sm" onclick="loadDiscoveryRecommendations()">🔄
+                                更新</button>
+                        </div>
                     </div>
+                    <div id="csvUploadResult" style="margin-top: 0.5rem; display: none;"></div>
                 </div>
 
                 <div class="card">
@@ -1778,6 +1784,54 @@
                 }
             } catch (e) {
                 document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-danger">通信エラー</div>';
+            }
+        }
+
+        async function uploadDiscoveryCsv() {
+            const fileInput = document.getElementById('discoveryCsvFile');
+            const resultDiv = document.getElementById('csvUploadResult');
+
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('CSVファイルを選択してください');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<span class="spinner"></span> アップロード中...';
+
+            try {
+                const res = await fetch('/discovery/feeds/csv', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    let msg = `<div class="alert alert-success">✅ 取り込み完了: 新規 ${data.inserted}件, 更新 ${data.updated}件</div>`;
+                    if (data.errors && data.errors.length > 0) {
+                        msg += `<div class="alert alert-warning">⚠️ エラー ${data.errors.length}件:<ul>`;
+                        data.errors.slice(0, 5).forEach(e => {
+                            msg += `<li>行${e.row}: ${e.message}</li>`;
+                        });
+                        if (data.errors.length > 5) {
+                            msg += `<li>...他${data.errors.length - 5}件</li>`;
+                        }
+                        msg += '</ul></div>';
+                    }
+                    resultDiv.innerHTML = msg;
+                    fileInput.value = '';
+                    loadDiscoveryRecommendations(); // 一覧を自動リロード
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">❌ エラー: ${data.error || 'アップロード失敗'}</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+                resultDiv.innerHTML = '<div class="alert alert-danger">❌ 通信エラー</div>';
             }
         }
 

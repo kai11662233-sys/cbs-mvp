@@ -11,48 +11,53 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface DiscoveryItemRepository extends JpaRepository<DiscoveryItem, Long> {
 
-    /**
-     * おすすめ一覧取得（フィルタ対応）
-     * excludeUsed: trueならUSED以外のみ
-     * minSafety: 最低安全スコア
-     * minProfit: 最低利益スコア
-     */
-    @Query("""
-            SELECT d FROM DiscoveryItem d
-            WHERE (:excludeUsed = false OR d.condition <> 'USED')
-              AND d.safetyScore >= :minSafety
-              AND d.profitScore >= :minProfit
-              AND d.status NOT IN ('ARCHIVED', 'DRAFTED')
-            ORDER BY d.overallScore DESC
-            """)
-    List<DiscoveryItem> findRecommendations(
-            @Param("excludeUsed") boolean excludeUsed,
-            @Param("minSafety") int minSafety,
-            @Param("minProfit") int minProfit,
-            Pageable pageable);
+        /**
+         * おすすめ一覧取得（フィルタ対応）
+         * excludeUsed: trueならUSED以外のみ
+         * minSafety: 最低安全スコア
+         * minProfit: 最低利益スコア
+         */
+        @Query("""
+                        SELECT d FROM DiscoveryItem d
+                        WHERE (:excludeUsed = false OR d.condition <> 'USED')
+                          AND d.safetyScore >= :minSafety
+                          AND d.profitScore >= :minProfit
+                          AND d.status NOT IN ('ARCHIVED', 'DRAFTED')
+                        ORDER BY d.overallScore DESC
+                        """)
+        List<DiscoveryItem> findRecommendations(
+                        @Param("excludeUsed") boolean excludeUsed,
+                        @Param("minSafety") int minSafety,
+                        @Param("minProfit") int minProfit,
+                        Pageable pageable);
 
-    /**
-     * ステータス別カウント
-     */
-    long countByStatus(String status);
+        /**
+         * ステータス別カウント
+         */
+        long countByStatus(String status);
 
-    /**
-     * 条件別カウント
-     */
-    long countByCondition(String condition);
+        /**
+         * 条件別カウント
+         */
+        long countByCondition(String condition);
 
-    /**
-     * sourceUrl重複チェック
-     */
-    boolean existsBySourceUrl(String sourceUrl);
+        /**
+         * sourceUrlで検索（upsert判定用）
+         */
+        java.util.Optional<DiscoveryItem> findBySourceUrl(String sourceUrl);
 
-    /**
-     * linked_candidate_idで検索
-     */
-    java.util.Optional<DiscoveryItem> findByLinkedCandidateId(Long candidateId);
+        /**
+         * sourceUrl重複チェック
+         */
+        boolean existsBySourceUrl(String sourceUrl);
 
-    /**
-     * ステータス一覧取得
-     */
-    List<DiscoveryItem> findByStatusIn(List<String> statuses, Pageable pageable);
+        /**
+         * linked_candidate_idで検索
+         */
+        java.util.Optional<DiscoveryItem> findByLinkedCandidateId(Long candidateId);
+
+        /**
+         * ステータス一覧取得
+         */
+        List<DiscoveryItem> findByStatusIn(List<String> statuses, Pageable pageable);
 }

@@ -1,6 +1,8 @@
 package com.example.cbs_mvp.discovery;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -25,6 +27,8 @@ public class DiscoveryDraftOrchestrator {
     private static final Logger log = LoggerFactory.getLogger(DiscoveryDraftOrchestrator.class);
     private static final String FLAG_MIN_SAFETY = "DISCOVERY_MIN_SAFETY";
     private static final int DEFAULT_MIN_SAFETY = 50;
+    private static final String FLAG_FRESHNESS_REQUIRED_HOURS = "DISCOVERY_FRESHNESS_REQUIRED_HOURS";
+    private static final int DEFAULT_FRESHNESS_REQUIRED_HOURS = 24;
 
     private final DiscoveryService discoveryService;
     private final DiscoveryItemRepository discoveryRepo;
@@ -96,7 +100,20 @@ public class DiscoveryDraftOrchestrator {
                     String.format("SafetyScore(%d)が閾値(%d)未満です", item.getSafetyScore(), minSafety));
         }
 
-        // 5) Candidate作成
+        // 5) Freshnessチェック（refresh後のlastCheckedAtを確認）
+        int requiredHours = getRequiredFreshnessHours();
+        OffsetDateTime lastChecked = item.getLastCheckedAt();
+        if (lastChecked == null) {
+            throw new DraftConditionException("FRESHNESS_TOO_OLD",
+                    "lastCheckedAtがnullです。refreshが実行されていません。");
+        }
+        long hoursElapsed = Duration.between(lastChecked, OffsetDateTime.now()).toHours();
+        if (hoursElapsed > requiredHours) {
+            throw new DraftConditionException("FRESHNESS_TOO_OLD",
+                    String.format("最終チェックから%d時間経過しています（要件: %d時間以内）", hoursElapsed, requiredHours));
+        }
+
+        // 6) Candidate作成
         BigDecimal weightKg = item.getWeightKg() != null ? item.getWeightKg() : new BigDecimal("1.500");
         String sizeTier = "XL"; // デフォルト
         String memo = "Discovery ID: " + discoveryId + (item.getNotes() != null ? " | " + item.getNotes() : "");
@@ -169,6 +186,18 @@ public class DiscoveryDraftOrchestrator {
             }
         }
         return DEFAULT_MIN_SAFETY;
+    }
+
+    private int getRequiredFreshnessHours() {
+        String value = systemFlagService.get(FLAG_FRESHNESS_REQUIRED_HOURS);
+        if (value != null && !value.isBlank()) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                // ignore, return default
+            }
+        }
+        return DEFAULT_FRESHNESS_REQUIRED_HOURS;
     }
 
     // ----- Result / Exception -----
