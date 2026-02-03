@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.UUID;
+import com.example.cbs_mvp.service.StateTransitionService;
 import com.example.cbs_mvp.dto.discovery.CreateDiscoveryItemRequest;
 
 /**
@@ -29,10 +30,13 @@ public class DiscoveryService {
 
     private final DiscoveryItemRepository repository;
     private final DiscoveryScoringService scoringService;
+    private final StateTransitionService transitions;
 
-    public DiscoveryService(DiscoveryItemRepository repository, DiscoveryScoringService scoringService) {
+    public DiscoveryService(DiscoveryItemRepository repository, DiscoveryScoringService scoringService,
+            StateTransitionService transitions) {
         this.repository = repository;
         this.scoringService = scoringService;
+        this.transitions = transitions;
     }
 
     /**
@@ -66,7 +70,14 @@ public class DiscoveryService {
         item = repository.save(item);
         log.info("Created DiscoveryItem id={}, title={}", item.getId(), item.getTitle());
 
+        // 監査ログ
+        transitions.log("DISCOVERY_ITEM", item.getId(), null, "NEW", null, "Manual Create", "OPs", cid());
+
         return item;
+    }
+
+    private String cid() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     /**

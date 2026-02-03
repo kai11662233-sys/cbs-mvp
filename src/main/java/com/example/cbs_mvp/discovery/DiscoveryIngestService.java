@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import com.example.cbs_mvp.fx.FxRateService;
 import com.example.cbs_mvp.pricing.PricingCalculator;
 import com.example.cbs_mvp.pricing.PricingRequest;
 import com.example.cbs_mvp.pricing.PricingResponse;
+import com.example.cbs_mvp.service.StateTransitionService;
 
 /**
  * Discovery取り込みサービス
@@ -41,16 +43,19 @@ public class DiscoveryIngestService {
     private final DiscoveryScoringService scoringService;
     private final PricingCalculator pricingCalculator;
     private final FxRateService fxRateService;
+    private final StateTransitionService transitions;
 
     public DiscoveryIngestService(
             DiscoveryItemRepository repository,
             DiscoveryScoringService scoringService,
             PricingCalculator pricingCalculator,
-            FxRateService fxRateService) {
+            FxRateService fxRateService,
+            StateTransitionService transitions) {
         this.repository = repository;
         this.scoringService = scoringService;
         this.pricingCalculator = pricingCalculator;
         this.fxRateService = fxRateService;
+        this.transitions = transitions;
     }
 
     /**
@@ -120,32 +125,23 @@ public class DiscoveryIngestService {
             item = existingOpt.get();
             previousPriceYen = item.getPriceYen();
             isNew = false;
-
             // フィールド更新
-            if (seed.title() != null && !seed.title().isBlank()) {
+            if (seed.title() != null && !seed.title().isBlank())
                 item.setTitle(seed.title());
-            }
-            if (seed.condition() != null && !seed.condition().isBlank()) {
+            if (seed.condition() != null && !seed.condition().isBlank())
                 item.setCondition(seed.condition());
-            }
-            if (seed.sourceType() != null && !seed.sourceType().isBlank()) {
+            if (seed.sourceType() != null && !seed.sourceType().isBlank())
                 item.setSourceType(seed.sourceType());
-            }
-            if (seed.categoryHint() != null) {
+            if (seed.categoryHint() != null)
                 item.setCategoryHint(seed.categoryHint());
-            }
-            if (seed.priceYen() != null) {
+            if (seed.priceYen() != null)
                 item.setPriceYen(seed.priceYen());
-            }
-            if (seed.shippingYen() != null) {
+            if (seed.shippingYen() != null)
                 item.setShippingYen(seed.shippingYen());
-            }
-            if (seed.weightKg() != null) {
+            if (seed.weightKg() != null)
                 item.setWeightKg(seed.weightKg());
-            }
-            if (seed.notes() != null) {
+            if (seed.notes() != null)
                 item.setNotes(seed.notes());
-            }
         } else {
             // 新規: 作成
             item = new DiscoveryItem();
@@ -189,7 +185,7 @@ public class DiscoveryIngestService {
                 previousPriceYen,
                 estimate.profitRate(),
                 estimate.gateProfitOk(),
-                true // gateCashOk: MVPでは仮置きtrue。Draft時に最終判断する
+                true // gateCashOk
         );
 
         // ステータス更新
@@ -201,31 +197,31 @@ public class DiscoveryIngestService {
             item.setStatus("CHECKED");
         }
 
-        repository.save(item);
+        item = repository.save(item);
+
+        // 監査ログ（新規の場合のみ記録）
+        if (isNew) {
+            transitions.log("DISCOVERY_ITEM", item.getId(), null, "NEW", null, "CSV Ingest", "SYSTEM", cid());
+        }
+
         return isNew;
     }
 
-    /**
-     * ProfitScore概算計算（PricingCalculator使用）
-     */
     private ProfitEstimate calculateProfitEstimate(DiscoveryItem item) {
         try {
-            // FXレート取得
             BigDecimal fxRate = DEFAULT_FX_RATE;
             var fxResult = fxRateService.getCurrentRate();
             if (fxResult.isSuccess() && fxResult.rate() != null) {
                 fxRate = fxResult.rate();
             }
 
-            // PricingRequest組み立て
             PricingRequest request = new PricingRequest();
             request.setSourcePriceYen(item.getPriceYen());
-            request.setWeightKg(item.getWeightKg()); // nullならCalculator内でデフォルト使用
-            request.setSizeTier(null); // nullならCalculator内でデフォルト使用
+            request.setWeightKg(item.getWeightKg());
+            request.setSizeTier(null);
             request.setFxRate(fxRate);
-            request.setTargetSellUsd(null); // 自動計算
+            request.setTargetSellUsd(null);
 
-            // Pricing実行
             PricingResponse response = pricingCalculator.calculate(request);
 
             return new ProfitEstimate(
@@ -237,11 +233,6 @@ public class DiscoveryIngestService {
         }
     }
 
-    /**
-     * CSVの1行をパース
-     * 期待フォーマット:
-     * source_url,title,condition,source_type,category_hint,price_yen,shipping_yen,weight_kg,notes
-     */
     private DiscoverySeed parseCsvLine(String line) {
         String[] cols = line.split(",", -1);
         if (cols.length < 6) {
@@ -278,9 +269,10 @@ public class DiscoveryIngestService {
         }
     }
 
-    /**
-     * ProfitScore概算結果
-     */
+    private String cid() {
+        return UUID.randomUUID().toString().replace("-", "");
+    }
+
     private record ProfitEstimate(BigDecimal profitRate, boolean gateProfitOk) {
     }
 }

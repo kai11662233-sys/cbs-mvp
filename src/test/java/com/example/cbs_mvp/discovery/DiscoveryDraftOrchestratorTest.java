@@ -153,6 +153,26 @@ class DiscoveryDraftOrchestratorTest {
         assertEquals("FRESHNESS_TOO_OLD", ex.getCode());
     }
 
+    @Test
+    void createDraft_idempotency_shouldReturnExistingDraft() {
+        // Arrange
+        Long discoveryId = 5L;
+        DiscoveryItem item = createTestItem(discoveryId, OffsetDateTime.now());
+        item.setLinkedDraftId(999L); // 既にDraft済み
+
+        when(discoveryRepo.findById(discoveryId)).thenReturn(Optional.of(item));
+        // System Flagsなどは今回は呼ばれる前に戻るはずだが、もし呼ばれたときのためにモック
+        // when(killSwitch.isPaused()).thenReturn(false);
+
+        // Act
+        var result = orchestrator.createDraft(discoveryId, BigDecimal.valueOf(150), null);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(999L, result.draftId());
+        assertEquals("ALREADY_DRAFTED", result.status());
+    }
+
     private DiscoveryItem createTestItem(Long id, OffsetDateTime lastCheckedAt) {
         DiscoveryItem item = new DiscoveryItem();
         item.setId(id);
