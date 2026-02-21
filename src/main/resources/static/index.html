@@ -853,6 +853,8 @@
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="file" id="discoveryCsvFile" accept=".csv" style="max-width: 200px;">
                             <button class="btn btn-sm" onclick="uploadDiscoveryCsv()">📤 CSV Upload</button>
+                            <button class="btn btn-sm btn-primary" id="btnAutoRecommend" onclick="autoRecommend()">🤖
+                                おすすめ自動取得</button>
                             <button class="btn btn-outline btn-sm" onclick="loadDiscoveryRecommendations()">🔄
                                 更新</button>
                         </div>
@@ -977,7 +979,12 @@
 
                 <div style="margin-bottom: 1rem;">
                     <label>URL</label>
-                    <a id="d_url" href="#" target="_blank" style="color: var(--accent); word-break: break-all;">--</a>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <a id="d_url" href="#" target="_blank" class="btn btn-outline btn-sm"
+                            style="color: var(--accent); word-break: break-all; text-decoration: none; flex-grow: 1; text-align: left;">--</a>
+                        <button class="btn btn-outline btn-sm"
+                            onclick="window.open(document.getElementById('d_url').href, '_blank')">🌐 開く</button>
+                    </div>
                 </div>
 
                 <div id="discoveryModalMsg" style="margin-bottom: 1rem;"></div>
@@ -995,6 +1002,40 @@
     <script>
         let token = localStorage.getItem('token');
         let selectedFile = null;
+
+        // Global Error Handler for UI Debugging
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.bottom = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.background = 'rgba(255, 0, 0, 0.9)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.fontFamily = 'monospace';
+            errorDiv.innerHTML = '<strong>JS Error:</strong> ' + msg + ' (Line: ' + lineNo + ')<br><small>' + url + '</small>';
+            document.body.appendChild(errorDiv);
+            return false;
+        };
+
+        window.onunhandledrejection = function (event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            const errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.background = 'rgba(255, 68, 0, 0.9)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.innerHTML = '<strong>Async Error:</strong> ' + (event.reason ? event.reason.message || event.reason : 'Unknown Promise Rejection');
+            document.body.appendChild(errorDiv);
+        };
 
         // 初期化
         if (token) {
@@ -1024,6 +1065,9 @@
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('loginError');
 
+            console.log('Login attempt started for:', username);
+            errorEl.textContent = '';
+
             try {
                 const res = await fetch('/auth/login', {
                     method: 'POST',
@@ -1031,18 +1075,27 @@
                     body: JSON.stringify({ username, password })
                 });
 
-                const data = await res.json();
-
-                if (res.ok && data.token) {
+                console.log('Login response status:', res.status);
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('Login successful');
                     localStorage.setItem('token', data.token);
                     token = data.token;
                     showApp();
                 } else {
-                    errorEl.textContent = data.error || 'ログイン失敗';
+                    let errorText = 'ログイン失敗';
+                    try {
+                        const data = await res.json();
+                        errorText = data.error || errorText;
+                    } catch (jsonErr) {
+                        console.warn('Non-JSON error response');
+                    }
+                    errorEl.textContent = errorText;
                     errorEl.style.display = 'block';
                 }
             } catch (e) {
-                errorEl.textContent = '接続エラー';
+                console.error('Login request failed', e);
+                errorEl.textContent = '接続エラー: ' + e.message;
                 errorEl.style.display = 'block';
             }
         }
@@ -1151,7 +1204,9 @@
                                 ''}
                                 </td>
                                 <td>${c.candidateId}</td>
-                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.sourceUrl || '--'}</td>
+                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <a href="${c.sourceUrl || '#'}" target="_blank" style="color: var(--accent); text-decoration: none;">${c.sourceUrl || '--'}</a>
+                                </td>
                                 <td>${formatYen(c.sourcePriceYen)}</td>
                                 <td>${c.sizeTier || '--'}</td>
                                 <td>
@@ -1161,9 +1216,12 @@
                                     </span>
                                 </td>
                                 <td>
-                                    ${c.state === 'CANDIDATE' ?
+                                    <div style="display: flex; gap: 0.25rem;">
+                                        <button class="btn btn-outline btn-sm" title="ブラウザで開く" onclick="window.open('${c.sourceUrl}', '_blank')">🌐</button>
+                                        ${c.state === 'CANDIDATE' ?
                                 `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier || ''}')">Price</button>` :
                                 ''}
+                                    </div>
                                 </td>
                             </tr>
                         `).join('');
@@ -1625,6 +1683,28 @@
         }
 
         // ===== Discovery Functions =====
+        async function autoRecommend() {
+            const btn = document.getElementById('btnAutoRecommend');
+            const originalText = btn.textContent;
+            btn.textContent = '取得中...';
+            btn.disabled = true;
+
+            try {
+                const res = await api('/discovery/auto-recommend', { method: 'POST' });
+                if (res) {
+                    alert(`おすすめ取得完了\n取得: ${res.fetched}件\n新規登録: ${res.inserted}件\n更新: ${res.updated}件\nスキップ(利益NG): ${res.skipped}件`);
+                    loadDiscoveryRecommendations();
+                } else {
+                    alert("取得に失敗しました");
+                }
+            } catch (e) {
+                alert("エラーが発生しました: " + e.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
         async function loadDiscoveryRecommendations() {
             const excludeUsed = document.getElementById('discoveryExcludeUsed').checked;
             const minSafety = document.getElementById('discoveryMinSafety').value || 0;

@@ -1,8 +1,11 @@
 package com.example.cbs_mvp.discovery;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import com.example.cbs_mvp.dto.discovery.DiscoverySeed;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,14 +37,23 @@ public class DiscoveryController {
     private final OpsKeyService opsKeyService;
     private final DiscoveryService discoveryService;
     private final DiscoveryDraftOrchestrator orchestrator;
+    private final DiscoveryIngestService ingestService;
+    private final List<ExternalItemSearchService> searchServices;
+    private final AutoRecommendationService autoRecommendationService;
 
     public DiscoveryController(
             OpsKeyService opsKeyService,
             DiscoveryService discoveryService,
-            DiscoveryDraftOrchestrator orchestrator) {
+            DiscoveryDraftOrchestrator orchestrator,
+            DiscoveryIngestService ingestService,
+            List<ExternalItemSearchService> searchServices,
+            AutoRecommendationService autoRecommendationService) {
         this.opsKeyService = opsKeyService;
         this.discoveryService = discoveryService;
         this.orchestrator = orchestrator;
+        this.ingestService = ingestService;
+        this.searchServices = searchServices;
+        this.autoRecommendationService = autoRecommendationService;
     }
 
     /**
@@ -176,6 +188,77 @@ public class DiscoveryController {
                     "error", "INVALID_STATE",
                     "message", e.getMessage()));
         }
+    }
+
+    /**
+     * 6) POST /discovery/external-search?keyword=...
+     * 外部サイト(Yahoo/Rakuten)から検索してDiscoveryに登録
+     */
+    @PostMapping("/external-search")
+    public ResponseEntity<?> externalSearch(
+            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
+            @RequestParam String keyword) {
+
+        if (!isAuthorized(opsKey)) {
+            return unauthorized();
+        }
+
+        int totalInserted = 0;
+        int totalUpdated = 0;
+        List<DiscoverySeed> allResults = new ArrayList<>();
+
+        // 各サービスで検索
+        for (ExternalItemSearchService service : searchServices) {
+            try {
+                List<DiscoverySeed> results = service.searchItems(keyword);
+                allResults.addAll(results);
+            } catch (Exception e) {
+                // 個別のエラーはログに出して続行 (e.g. API limit)
+                e.printStackTrace();
+            }
+        }
+
+        // 登録処理
+        for (DiscoverySeed seed : allResults) {
+            try {
+                boolean isNew = ingestService.upsert(seed);
+                if (isNew) {
+                    totalInserted++;
+                } else {
+                    totalUpdated++;
+                }
+            } catch (Exception e) {
+                // 無視して次へ
+            }
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "keyword", keyword,
+                "found", allResults.size(),
+                "inserted", totalInserted,
+                "updated", totalUpdated));
+    }
+
+    /**
+     * 7) POST /discovery/auto-recommend
+     * 自動おすすめ取得（キーワード不要・ワンクリック）
+     * 価格帯・利益ゲートで自動フィルタして登録
+     */
+    @PostMapping("/auto-recommend")
+    public ResponseEntity<?> autoRecommend(
+            @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey) {
+
+        if (!isAuthorized(opsKey)) {
+            return unauthorized();
+        }
+
+        var result = autoRecommendationService.execute();
+
+        return ResponseEntity.ok(Map.of(
+                "fetched", result.fetched(),
+                "inserted", result.inserted(),
+                "updated", result.updated(),
+                "skipped", result.skipped()));
     }
 
     // ----- Helper methods -----
