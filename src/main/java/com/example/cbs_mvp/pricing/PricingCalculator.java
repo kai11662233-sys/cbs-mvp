@@ -90,29 +90,42 @@ public class PricingCalculator {
 
         BigDecimal recSellUsd = yenRevenueNeeded
                 .divide(fxSafe, 10, RoundingMode.HALF_UP)
-                .setScale(2, RoundingMode.CEILING); // ★最後だけ2桁切り上げ
+                .setScale(2, RoundingMode.CEILING); // ★USDは2桁切り上げ
 
         // J: Use Sell USD
         BigDecimal useSellUsd = (in.getTargetSellUsd() == null) ? recSellUsd : in.getTargetSellUsd();
 
-        // K/N/O/P
-        BigDecimal sellYen = useSellUsd.multiply(fxSafe);
-        BigDecimal feesAndReserve = sellYen.multiply(ebayFeeRate.add(refundResRate));
-        BigDecimal profitYen = sellYen.subtract(totalCost).subtract(feesAndReserve);
+        // K/N/O/P (JPY metrics rounded to 0 decimals)
+        BigDecimal sellYen = useSellUsd.multiply(fxSafe).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal feesAndReserve = sellYen.multiply(ebayFeeRate.add(refundResRate)).setScale(0, RoundingMode.HALF_UP);
 
-        BigDecimal profitRate = profitYen.divide(totalCost, 6, RoundingMode.HALF_UP);
+        BigDecimal expectedCostJpy = totalCost.setScale(0, RoundingMode.HALF_UP);
+        BigDecimal expectedProfitJpy = sellYen.subtract(expectedCostJpy).subtract(feesAndReserve);
 
-        // Q: PROFIT GATE（Cross Multiply）
-        boolean profitAmountOk = profitYen.compareTo(profitMinYen) >= 0;
-        // profit_rate >= profitMinRate <=> profitYen >= totalCost * profitMinRate
-        boolean profitRateOk = profitYen.compareTo(totalCost.multiply(profitMinRate)) >= 0;
+        BigDecimal profitRate = expectedCostJpy.compareTo(BigDecimal.ZERO) > 0
+                ? expectedProfitJpy.divide(expectedCostJpy, 6, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        // Q: PROFIT GATE
+        boolean profitAmountOk = expectedProfitJpy.compareTo(profitMinYen) >= 0;
+        // expectedProfitJpy >= expectedCostJpy * profitMinRate
+        boolean profitRateOk = expectedProfitJpy.compareTo(expectedCostJpy.multiply(profitMinRate)) >= 0;
 
         boolean gateProfitOk = profitAmountOk && profitRateOk;
+
+        // Exposure Gate (optional guardrail)
+        BigDecimal maxWorstCaseLoss = bd(flags.get("MAX_WORST_CASE_LOSS"), "30000");
+        // 最悪損失 = 仕入 + 送料 + 手数料 − 回収見込み（返品なし想定） (Salvage = 0)
+        BigDecimal worstCaseLossJpy = expectedCostJpy.add(feesAndReserve); // Very simplified worst case scenario
+        boolean exposureRisk = worstCaseLossJpy.compareTo(maxWorstCaseLoss) > 0;
 
         // W: WARN（入力売価 < 推奨売価）
         String warn = "";
         if (in.getTargetSellUsd() != null && in.getTargetSellUsd().compareTo(recSellUsd) < 0) {
             warn = "⚠️Price Low";
+        }
+        if (exposureRisk) {
+            warn = warn.isEmpty() ? "⚠️Exposure Risk" : warn + ", ⚠️Exposure Risk";
         }
 
         return PricingResponse.builder()
@@ -120,18 +133,18 @@ public class PricingCalculator {
                 .safeSizeTier(safeSize)
                 .fxSafe(fxSafe)
 
-                .calcSourcePriceYen(nz(in.getSourcePriceYen()))
+                .calcSourcePriceYen(nz(in.getSourcePriceYen()).setScale(0, RoundingMode.HALF_UP))
                 .usedFeeRate(ebayFeeRate)
 
-                .intlShipCostYen(intlShip.setScale(2, RoundingMode.HALF_UP))
-                .totalCostYen(totalCost.setScale(2, RoundingMode.HALF_UP))
+                .intlShipCostYen(intlShip.setScale(0, RoundingMode.HALF_UP))
+                .expectedCostJpy(expectedCostJpy)
 
                 .recSellUsd(recSellUsd)
                 .useSellUsd(useSellUsd)
-                .sellYen(sellYen.setScale(2, RoundingMode.HALF_UP))
+                .sellYen(sellYen)
 
-                .feesAndReserveYen(feesAndReserve.setScale(2, RoundingMode.HALF_UP))
-                .profitYen(profitYen.setScale(2, RoundingMode.HALF_UP))
+                .feesAndReserveYen(feesAndReserve)
+                .expectedProfitJpy(expectedProfitJpy)
                 .profitRate(profitRate)
 
                 .gateProfitOk(gateProfitOk)

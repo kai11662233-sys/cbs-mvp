@@ -568,6 +568,7 @@
             <div class="nav-logo">CBS-MVP</div>
             <div class="nav-links">
                 <span class="nav-link active" data-page="dashboard">📊 ダッシュボード</span>
+                <span class="nav-link" data-page="discovery">🔍 Discovery</span>
                 <span class="nav-link" data-page="candidates">📦 Candidate</span>
                 <span class="nav-link" data-page="orders">🛒 Orders</span>
                 <span class="nav-link" data-page="pricing">💰 価格計算</span>
@@ -830,6 +831,62 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Discoveryページ -->
+            <div id="page-discovery" class="page">
+                <h2 class="section-title">🔍 Discovery - おすすめ商品</h2>
+
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                            <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="discoveryExcludeUsed" style="width: auto; margin: 0;" checked
+                                    onchange="loadDiscoveryRecommendations()">
+                                中古を除外
+                            </label>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <label style="margin: 0;">最低Safety:</label>
+                                <input type="number" id="discoveryMinSafety" value="0" min="0" max="100"
+                                    style="width: 60px; margin: 0;" onchange="loadDiscoveryRecommendations()">
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <input type="file" id="discoveryCsvFile" accept=".csv" style="max-width: 200px;">
+                            <button class="btn btn-sm" onclick="uploadDiscoveryCsv()">📤 CSV Upload</button>
+                            <button class="btn btn-sm btn-primary" id="btnAutoRecommend" onclick="autoRecommend()">🤖
+                                おすすめ自動取得</button>
+                            <button class="btn btn-outline btn-sm" onclick="loadDiscoveryRecommendations()">🔄
+                                更新</button>
+                        </div>
+                    </div>
+                    <div id="csvUploadResult" style="margin-top: 0.5rem; display: none;"></div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem;">おすすめ一覧</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>タイトル</th>
+                                <th>価格</th>
+                                <th>Safety</th>
+                                <th>Profit</th>
+                                <th>Fresh</th>
+                                <th>Overall</th>
+                                <th>状態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="discoveryTable">
+                            <tr>
+                                <td colspan="9" class="loading">読み込み中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Pricing Modal -->
@@ -872,11 +929,114 @@
                 </div>
             </div>
         </div>
+
+        <!-- Discovery Detail Modal -->
+        <div id="discoveryModal" class="modal">
+            <div class="modal-content" style="max-width: 700px;">
+                <h3 style="margin-bottom: 1.5rem;">Discovery Item 詳細</h3>
+                <input type="hidden" id="d_itemId">
+
+                <div class="grid grid-2" style="margin-bottom: 1rem;">
+                    <div>
+                        <label>タイトル</label>
+                        <div id="d_title" style="font-weight: 600;">--</div>
+                    </div>
+                    <div>
+                        <label>ステータス</label>
+                        <div id="d_status">--</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-4" style="margin-bottom: 1rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Safety</div>
+                        <div id="d_safety" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Profit</div>
+                        <div id="d_profit" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Freshness</div>
+                        <div id="d_freshness" style="font-size: 1.5rem; font-weight: 700;">--</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Overall</div>
+                        <div id="d_overall" style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">--</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>Safety内訳</label>
+                    <div id="d_breakdown"
+                        style="font-size: 0.875rem; background: var(--bg-card); padding: 0.5rem; border-radius: 0.5rem;">
+                        --</div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>リスクフラグ</label>
+                    <div id="d_riskFlags">--</div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <label>URL</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <a id="d_url" href="#" target="_blank" class="btn btn-outline btn-sm"
+                            style="color: var(--accent); word-break: break-all; text-decoration: none; flex-grow: 1; text-align: left;">--</a>
+                        <button class="btn btn-outline btn-sm"
+                            onclick="window.open(document.getElementById('d_url').href, '_blank')">🌐 開く</button>
+                    </div>
+                </div>
+
+                <div id="discoveryModalMsg" style="margin-bottom: 1rem;"></div>
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button class="btn btn-outline" onclick="closeDiscoveryModal()">閉じる</button>
+                    <button class="btn btn-primary" onclick="refreshDiscoveryItem()">🔄 Refresh</button>
+                    <button class="btn btn-success" id="d_draftBtn" onclick="draftDiscoveryItem()" disabled>📝
+                        Draft作成</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         let token = localStorage.getItem('token');
         let selectedFile = null;
+
+        // Global Error Handler for UI Debugging
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.bottom = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.background = 'rgba(255, 0, 0, 0.9)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.style.fontFamily = 'monospace';
+            errorDiv.innerHTML = '<strong>JS Error:</strong> ' + msg + ' (Line: ' + lineNo + ')<br><small>' + url + '</small>';
+            document.body.appendChild(errorDiv);
+            return false;
+        };
+
+        window.onunhandledrejection = function (event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            const errorDiv = document.createElement('div');
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '0';
+            errorDiv.style.left = '0';
+            errorDiv.style.width = '100%';
+            errorDiv.style.background = 'rgba(255, 68, 0, 0.9)';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '10px';
+            errorDiv.style.zIndex = '9999';
+            errorDiv.style.fontSize = '12px';
+            errorDiv.innerHTML = '<strong>Async Error:</strong> ' + (event.reason ? event.reason.message || event.reason : 'Unknown Promise Rejection');
+            document.body.appendChild(errorDiv);
+        };
 
         // 初期化
         if (token) {
@@ -893,6 +1053,7 @@
                 document.getElementById('page-' + page).classList.add('active');
 
                 // ページ固有の読み込み
+                if (page === 'discovery') loadDiscoveryRecommendations();
                 if (page === 'candidates') loadCandidates();
                 if (page === 'orders') loadOrders();
                 if (page === 'fx') loadFxDetails();
@@ -905,6 +1066,9 @@
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('loginError');
 
+            console.log('Login attempt started for:', username);
+            errorEl.textContent = '';
+
             try {
                 const res = await fetch('/auth/login', {
                     method: 'POST',
@@ -912,18 +1076,27 @@
                     body: JSON.stringify({ username, password })
                 });
 
-                const data = await res.json();
-
-                if (res.ok && data.token) {
+                console.log('Login response status:', res.status);
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log('Login successful');
                     localStorage.setItem('token', data.token);
                     token = data.token;
                     showApp();
                 } else {
-                    errorEl.textContent = data.error || 'ログイン失敗';
+                    let errorText = 'ログイン失敗';
+                    try {
+                        const data = await res.json();
+                        errorText = data.error || errorText;
+                    } catch (jsonErr) {
+                        console.warn('Non-JSON error response');
+                    }
+                    errorEl.textContent = errorText;
                     errorEl.style.display = 'block';
                 }
             } catch (e) {
-                errorEl.textContent = '接続エラー';
+                console.error('Login request failed', e);
+                errorEl.textContent = '接続エラー: ' + e.message;
                 errorEl.style.display = 'block';
             }
         }
@@ -1032,7 +1205,9 @@
                                 ''}
                                 </td>
                                 <td>${c.candidateId}</td>
-                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${c.sourceUrl || '--'}</td>
+                                <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <a href="${c.sourceUrl || '#'}" target="_blank" style="color: var(--accent); text-decoration: none;">${c.sourceUrl || '--'}</a>
+                                </td>
                                 <td>${formatYen(c.sourcePriceYen)}</td>
                                 <td>${c.sizeTier || '--'}</td>
                                 <td>
@@ -1042,9 +1217,12 @@
                                     </span>
                                 </td>
                                 <td>
-                                    ${c.state === 'CANDIDATE' ?
+                                    <div style="display: flex; gap: 0.25rem;">
+                                        <button class="btn btn-outline btn-sm" title="ブラウザで開く" onclick="window.open('${c.sourceUrl}', '_blank')">🌐</button>
+                                        ${c.state === 'CANDIDATE' ?
                                 `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier || ''}')">Price</button>` :
                                 ''}
+                                    </div>
                                 </td>
                             </tr>
                         `).join('');
@@ -1503,6 +1681,281 @@
             const val = document.getElementById('p_targetSellRange').value;
             document.getElementById('p_targetSell').value = val;
             debouncedCalc(); // Auto-calc on slider move
+        }
+
+        // ===== Discovery Functions =====
+        async function autoRecommend() {
+            const btn = document.getElementById('btnAutoRecommend');
+            const originalText = btn.textContent;
+            btn.textContent = '取得中...';
+            btn.disabled = true;
+
+            try {
+                const res = await api('/discovery/auto-recommend', { method: 'POST' });
+                if (res) {
+                    alert(`おすすめ取得完了\n取得: ${res.fetched}件\n新規登録: ${res.inserted}件\n更新: ${res.updated}件\nスキップ(利益NG): ${res.skipped}件`);
+                    loadDiscoveryRecommendations();
+                } else {
+                    alert("取得に失敗しました");
+                }
+            } catch (e) {
+                alert("エラーが発生しました: " + e.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function loadDiscoveryRecommendations() {
+            const excludeUsed = document.getElementById('discoveryExcludeUsed').checked;
+            const minSafety = document.getElementById('discoveryMinSafety').value || 0;
+            const url = `/discovery/recommendations?excludeUsed=${excludeUsed}&minSafety=${minSafety}&limit=50`;
+
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) throw new Error('Failed to load');
+                const data = await res.json();
+                renderDiscoveryTable(data.items || []);
+            } catch (e) {
+                document.getElementById('discoveryTable').innerHTML = `<tr><td colspan="9" class="loading">読み込みエラー</td></tr>`;
+            }
+        }
+
+        function renderDiscoveryTable(items) {
+            const tbody = document.getElementById('discoveryTable');
+            if (!items.length) {
+                tbody.innerHTML = '<tr><td colspan="9">データがありません</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td>${item.id}</td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${item.title || '(未設定)'}
+                    </td>
+                    <td>¥${Number(item.priceYen).toLocaleString()}</td>
+                    <td><span class="badge ${getScoreBadgeClass(item.safetyScore)}">${item.safetyScore}</span></td>
+                    <td><span class="badge ${getScoreBadgeClass(item.profitScore)}">${item.profitScore}</span></td>
+                    <td><span class="badge ${getScoreBadgeClass(item.freshnessScore)}">${item.freshnessScore}</span></td>
+                    <td><strong>${item.overallScore}</strong></td>
+                    <td><span class="badge ${getStatusBadgeClass(item.status)}">${item.status}</span></td>
+                    <td>
+                        <button class="btn btn-outline btn-sm" onclick="showDiscoveryDetail(${item.id})">詳細</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getScoreBadgeClass(score) {
+            if (score >= 70) return 'success';
+            if (score >= 40) return 'warning';
+            return 'danger';
+        }
+
+        function getStatusBadgeClass(status) {
+            switch (status) {
+                case 'NEW': return 'info';
+                case 'CHECKED': return 'success';
+                case 'OK': return 'success';
+                case 'NG': return 'danger';
+                case 'DRAFTED': return 'success';
+                default: return '';
+            }
+        }
+
+        async function showDiscoveryDetail(id) {
+            try {
+                const res = await fetch(`/discovery/items/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (!res.ok) throw new Error('Failed to load');
+                const item = await res.json();
+
+                document.getElementById('d_itemId').value = item.id;
+                document.getElementById('d_title').textContent = item.title || '(未設定)';
+                document.getElementById('d_status').innerHTML = `<span class="badge ${getStatusBadgeClass(item.status)}">${item.status}</span>`;
+                document.getElementById('d_safety').textContent = item.safetyScore;
+                document.getElementById('d_profit').textContent = item.profitScore;
+                document.getElementById('d_freshness').textContent = item.freshnessScore;
+                document.getElementById('d_overall').textContent = item.overallScore;
+
+                // Breakdown
+                const breakdown = item.safetyBreakdown || [];
+                if (breakdown.length) {
+                    document.getElementById('d_breakdown').innerHTML = breakdown.map(b =>
+                        `<div>${b.reason}: <span style="color: ${b.delta > 0 ? 'var(--success)' : 'var(--danger)'}">${b.delta > 0 ? '+' : ''}${b.delta}</span> (${b.description})</div>`
+                    ).join('');
+                } else {
+                    document.getElementById('d_breakdown').textContent = '減点なし';
+                }
+
+                // Risk Flags
+                const flags = item.riskFlags || [];
+                if (flags.length) {
+                    document.getElementById('d_riskFlags').innerHTML = flags.map(f => `<span class="badge danger" style="margin-right: 0.5rem;">${f}</span>`).join('');
+                } else {
+                    document.getElementById('d_riskFlags').textContent = 'なし';
+                }
+
+                document.getElementById('d_url').textContent = item.sourceUrl;
+                document.getElementById('d_url').href = item.sourceUrl;
+
+                // Draft button
+                const draftBtn = document.getElementById('d_draftBtn');
+                draftBtn.disabled = !item.isDraftable || item.status === 'DRAFTED';
+                if (item.status === 'DRAFTED') {
+                    draftBtn.textContent = '✓ Draft済み';
+                    document.getElementById('discoveryModalMsg').innerHTML = '';
+                } else {
+                    draftBtn.textContent = '📝 Draft作成';
+                    // Gate Check
+                    await checkCashGate(item.priceYen, item.shippingYen || 0);
+                }
+
+                document.getElementById('discoveryModal').classList.add('active');
+            } catch (e) {
+                alert('詳細の読み込みに失敗しました');
+                console.error(e);
+            }
+        }
+
+        async function checkCashGate(priceYen, shippingYen) {
+            const cost = (priceYen || 0) + (shippingYen || 0);
+            const draftBtn = document.getElementById('d_draftBtn');
+            const msgDiv = document.getElementById('discoveryModalMsg');
+
+            msgDiv.innerHTML = '<span class="spinner"></span> 資金判定中...';
+            draftBtn.disabled = true;
+
+            try {
+                const res = await fetch('/cash/gate-check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ newCostEstimateTotalYen: cost })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.ok) {
+                    msgDiv.innerHTML = '';
+                    draftBtn.disabled = false;
+                } else {
+                    const failReason = data.capOk === false ? '信用枠不足' : '資金不足';
+                    const detail = data.wcAvailableYen !== undefined
+                        ? `(必要: ¥${cost.toLocaleString()} / 残高: ¥${filterInt(data.wcAvailableYen).toLocaleString()})`
+                        : '';
+                    msgDiv.innerHTML = `<div class="alert alert-warning">⚠️ ${failReason} ${detail}</div>`;
+                    draftBtn.disabled = true;
+                }
+            } catch (e) {
+                console.error(e);
+                msgDiv.innerHTML = '<div class="alert alert-danger">判定エラー</div>';
+            }
+        }
+
+        function filterInt(value) {
+            if (/^(\-|\+)?([0-9]+|Infinity)$/.test(value))
+                return Number(value);
+            return NaN;
+        }
+
+        function closeDiscoveryModal() {
+            document.getElementById('discoveryModal').classList.remove('active');
+        }
+
+        async function refreshDiscoveryItem() {
+            const id = document.getElementById('d_itemId').value;
+            document.getElementById('discoveryModalMsg').innerHTML = '<div class="loading"><span class="spinner"></span> 再評価中...</div>';
+
+            try {
+                const res = await fetch(`/discovery/items/${id}/refresh`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-success">再評価完了</div>';
+                    showDiscoveryDetail(id); // Refresh modal
+                    loadDiscoveryRecommendations(); // Refresh list
+                } else {
+                    const err = await res.json();
+                    document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-danger">${err.error || 'エラー'}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-danger">通信エラー</div>';
+            }
+        }
+
+        async function draftDiscoveryItem() {
+            const id = document.getElementById('d_itemId').value;
+            document.getElementById('discoveryModalMsg').innerHTML = '<div class="loading"><span class="spinner"></span> Draft作成中...</div>';
+
+            try {
+                const res = await fetch(`/discovery/items/${id}/draft`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ fxRate: 150.0 })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-success">Draft作成完了！ Draft ID: ${data.draftId}</div>`;
+                    document.getElementById('d_draftBtn').disabled = true;
+                    document.getElementById('d_draftBtn').textContent = '✓ Draft済み';
+                    loadDiscoveryRecommendations();
+                } else {
+                    document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-danger">${data.message || data.error}</div>`;
+                }
+            } catch (e) {
+                document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-danger">通信エラー</div>';
+            }
+        }
+
+        async function uploadDiscoveryCsv() {
+            const fileInput = document.getElementById('discoveryCsvFile');
+            const resultDiv = document.getElementById('csvUploadResult');
+
+            if (!fileInput.files || !fileInput.files[0]) {
+                alert('CSVファイルを選択してください');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<span class="spinner"></span> アップロード中...';
+
+            try {
+                const res = await fetch('/discovery/feeds/csv', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    let msg = `<div class="alert alert-success">✅ 取り込み完了: 新規 ${data.inserted}件, 更新 ${data.updated}件</div>`;
+                    if (data.errors && data.errors.length > 0) {
+                        msg += `<div class="alert alert-warning">⚠️ エラー ${data.errors.length}件:<ul>`;
+                        data.errors.slice(0, 5).forEach(e => {
+                            msg += `<li>行${e.row}: ${e.message}</li>`;
+                        });
+                        if (data.errors.length > 5) {
+                            msg += `<li>...他${data.errors.length - 5}件</li>`;
+                        }
+                        msg += '</ul></div>';
+                    }
+                    resultDiv.innerHTML = msg;
+                    fileInput.value = '';
+                    loadDiscoveryRecommendations(); // 一覧を自動リロード
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">❌ エラー: ${data.error || 'アップロード失敗'}</div>`;
+                }
+            } catch (e) {
+                console.error(e);
+                resultDiv.innerHTML = '<div class="alert alert-danger">❌ 通信エラー</div>';
+            }
         }
 
         // 定期更新

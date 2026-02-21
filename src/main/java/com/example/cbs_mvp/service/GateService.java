@@ -18,47 +18,32 @@ public class GateService {
         this.poRepo = poRepo;
     }
 
+    /**
+     * Cash Gate: AvailableCash = CashOnHand - OpenCommitments - ReserveHeld
+     * Gate OK when: AvailableCash >= RequiredCashBuffer + newCostEstimate
+     */
     public GateResult checkCashGate(BigDecimal newCostEstimateTotalYen) {
-        BigDecimal currentCash = bd(flags.get("CURRENT_CASH"), "0");
-        BigDecimal creditLimit = bd(flags.get("CREDIT_LIMIT"), "0");
-        BigDecimal creditUsed = bd(flags.get("CREDIT_USED"), "0");
-        BigDecimal unconfirmedCost = bd(flags.get("UNCONFIRMED_COST"), "0");
+        BigDecimal cashOnHand = bd(flags.get("CURRENT_CASH"), "0");
+        BigDecimal requiredCashBuffer = bd(flags.get("REQUIRED_CASH_BUFFER"), "50000");
+
+        // Reserve: max(fixed reserve, sales * ratio)
         BigDecimal refundFixRes = bd(flags.get("REFUND_FIX_RES"), "0");
         BigDecimal recentSales30d = bd(flags.get("RECENT_SALES_30D"), "0");
         BigDecimal refundResRatio = bd(flags.get("REFUND_RES_RATIO"), "0.10");
-        BigDecimal wcCapRatio = bd(flags.get("WC_CAP_RATIO"), "0.30");
-
-        BigDecimal openCommitments = nz(poRepo.calculateOpenCommitments());
         BigDecimal refundReserve = refundFixRes.max(recentSales30d.multiply(refundResRatio));
 
-        BigDecimal creditAvailable = creditLimit.subtract(creditUsed);
-        if (creditAvailable.signum() < 0) {
-            creditAvailable = BigDecimal.ZERO;
-        }
+        BigDecimal openCommitments = nz(poRepo.calculateOpenCommitments());
 
-        BigDecimal wcAvailable = currentCash
-                .add(creditAvailable)
-                .subtract(unconfirmedCost)
-                .subtract(refundReserve)
-                .subtract(openCommitments);
+        // AvailableCash = CashOnHand - OpenCommitments - ReserveHeld
+        BigDecimal availableCash = cashOnHand
+                .subtract(openCommitments)
+                .subtract(refundReserve);
 
-        BigDecimal cap = recentSales30d.multiply(wcCapRatio);
-        BigDecimal totalCommitments = openCommitments.add(nz(newCostEstimateTotalYen));
+        // Gate: AvailableCash >= RequiredCashBuffer + newCost
+        BigDecimal threshold = requiredCashBuffer.add(nz(newCostEstimateTotalYen));
+        boolean ok = availableCash.compareTo(threshold) >= 0;
 
-        // 純粋な現金余裕（信用枠を含まない）
-        BigDecimal pureCashAvailable = currentCash
-                .subtract(unconfirmedCost)
-                .subtract(refundReserve)
-                .subtract(openCommitments);
-
-        boolean capOk = totalCommitments.compareTo(cap) <= 0;
-        boolean coveredByCash = pureCashAvailable.compareTo(nz(newCostEstimateTotalYen)) >= 0;
-
-        // Cap制限は、現金が足りず信用枠に頼る場合の急拡大防止とする。
-        // 現金でフルカバーできるなら、Capを超えていても許可する。
-        boolean ok = (capOk || coveredByCash) && wcAvailable.compareTo(nz(newCostEstimateTotalYen)) >= 0;
-
-        return new GateResult(ok, capOk, wcAvailable, refundReserve, openCommitments);
+        return new GateResult(ok, availableCash, refundReserve, openCommitments, requiredCashBuffer);
     }
 
     private static BigDecimal nz(BigDecimal v) {

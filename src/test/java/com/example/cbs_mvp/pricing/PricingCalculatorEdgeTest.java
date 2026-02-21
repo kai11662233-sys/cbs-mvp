@@ -61,8 +61,9 @@ class PricingCalculatorEdgeTest {
         PricingResponse response = calculator.calculate(request);
 
         // Even with 0 cost, the calculator suggests a price that yields profitMinYen
-        // (default 3000)
-        assertTrue(response.getProfitYen().compareTo(BigDecimal.ZERO) > 0);
+        // Min profit 3000 yen
+        assertTrue(response.getExpectedProfitJpy().compareTo(new BigDecimal("3000")) >= 0,
+                "Profit should be at least 3000 yen");
         assertTrue(response.isGateProfitOk());
     }
 

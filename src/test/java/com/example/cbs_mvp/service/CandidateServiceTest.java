@@ -50,14 +50,15 @@ class CandidateServiceTest {
                                 .recSellUsd(new BigDecimal("100.00"))
                                 .useSellUsd(new BigDecimal("100.00"))
                                 .sellYen(new BigDecimal("15000"))
-                                .totalCostYen(new BigDecimal("12000"))
-                                .profitYen(new BigDecimal("3000"))
+                                .expectedCostJpy(new BigDecimal("12000"))
+                                .expectedProfitJpy(new BigDecimal("3000"))
                                 .profitRate(new BigDecimal("0.25"))
                                 .gateProfitOk(true)
                                 .build();
 
-                GateResult gateResult = new GateResult(true, true,
-                                new BigDecimal("50000"), new BigDecimal("5000"), BigDecimal.ZERO);
+                GateResult gateResult = new GateResult(true,
+                                new BigDecimal("50000"), new BigDecimal("5000"), BigDecimal.ZERO,
+                                new BigDecimal("50000"));
 
                 when(candidateRepo.findById(1L)).thenReturn(Optional.of(candidate));
                 when(pricingRepo.findByCandidateId(1L)).thenReturn(Optional.empty());
@@ -103,14 +104,15 @@ class CandidateServiceTest {
                                 .recSellUsd(new BigDecimal("100.00"))
                                 .useSellUsd(new BigDecimal("100.00"))
                                 .sellYen(new BigDecimal("15000"))
-                                .totalCostYen(new BigDecimal("12000"))
-                                .profitYen(new BigDecimal("3000"))
+                                .expectedCostJpy(new BigDecimal("12000"))
+                                .expectedProfitJpy(new BigDecimal("3000"))
                                 .profitRate(new BigDecimal("0.25"))
                                 .gateProfitOk(true)
                                 .build();
 
-                GateResult gateResult = new GateResult(true, true,
-                                new BigDecimal("50000"), new BigDecimal("5000"), BigDecimal.ZERO);
+                GateResult gateResult = new GateResult(true,
+                                new BigDecimal("50000"), new BigDecimal("5000"), BigDecimal.ZERO,
+                                new BigDecimal("50000"));
 
                 when(candidateRepo.findById(4L)).thenReturn(Optional.of(candidate));
                 when(pricingRepo.findByCandidateId(4L)).thenReturn(Optional.empty());
@@ -154,8 +156,8 @@ class CandidateServiceTest {
                                 .recSellUsd(new BigDecimal("80.00"))
                                 .useSellUsd(new BigDecimal("80.00"))
                                 .sellYen(new BigDecimal("12000"))
-                                .totalCostYen(new BigDecimal("18000"))
-                                .profitYen(new BigDecimal("500"))
+                                .expectedCostJpy(new BigDecimal("18000"))
+                                .expectedProfitJpy(new BigDecimal("500"))
                                 .profitRate(new BigDecimal("0.03"))
                                 .gateProfitOk(false) // 利益不足
                                 .build();
@@ -166,7 +168,8 @@ class CandidateServiceTest {
                 // Fix: mock gateService to return a result (even if we don't care about cash
                 // gate for this test, it is called)
                 when(gateService.checkCashGate(any())).thenReturn(
-                                new GateResult(true, true, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
+                                new GateResult(true, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                                                BigDecimal.ZERO));
                 when(pricingRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
                 when(candidateRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -205,13 +208,14 @@ class CandidateServiceTest {
                                 .recSellUsd(new BigDecimal("100.00"))
                                 .useSellUsd(new BigDecimal("100.00"))
                                 .sellYen(new BigDecimal("15000"))
-                                .totalCostYen(new BigDecimal("12000"))
-                                .profitYen(new BigDecimal("3000"))
+                                .expectedCostJpy(new BigDecimal("12000"))
+                                .expectedProfitJpy(new BigDecimal("3000"))
                                 .gateProfitOk(true)
                                 .build();
 
-                GateResult gateResult = new GateResult(false, false, // 資金不足
-                                new BigDecimal("1000"), new BigDecimal("5000"), new BigDecimal("50000"));
+                GateResult gateResult = new GateResult(false, // 資金不足
+                                new BigDecimal("1000"), new BigDecimal("5000"), new BigDecimal("50000"),
+                                new BigDecimal("50000"));
 
                 when(candidateRepo.findById(3L)).thenReturn(Optional.of(candidate));
                 when(pricingRepo.findByCandidateId(3L)).thenReturn(Optional.empty());

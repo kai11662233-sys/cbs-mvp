@@ -61,7 +61,8 @@ public class PricingController {
     private PricingResponse withComparison(PricingResponse current, Long candidateId) {
         return pricingRepo.findByCandidateId(candidateId)
                 .map(prev -> {
-                    java.math.BigDecimal diffProfit = current.getProfitYen().subtract(prev.getProfitYen());
+                    java.math.BigDecimal diffProfit = current.getExpectedProfitJpy()
+                            .subtract(prev.getProfitYen());
 
                     return PricingResponse.builder()
                             .safeWeightKg(current.getSafeWeightKg())
@@ -70,12 +71,12 @@ public class PricingController {
                             .calcSourcePriceYen(current.getCalcSourcePriceYen())
                             .usedFeeRate(current.getUsedFeeRate())
                             .intlShipCostYen(current.getIntlShipCostYen())
-                            .totalCostYen(current.getTotalCostYen())
+                            .expectedCostJpy(current.getExpectedCostJpy())
                             .recSellUsd(current.getRecSellUsd())
                             .useSellUsd(current.getUseSellUsd())
                             .sellYen(current.getSellYen())
                             .feesAndReserveYen(current.getFeesAndReserveYen())
-                            .profitYen(current.getProfitYen())
+                            .expectedProfitJpy(current.getExpectedProfitJpy())
                             .profitRate(current.getProfitRate())
                             .gateProfitOk(current.isGateProfitOk())
                             .warn(current.getWarn())

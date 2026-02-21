@@ -47,7 +47,7 @@ class PricingCalculatorTest {
 
         // totalCost = 10000 + (800+300+200+500)=11800 + ship(XL:3500+2000*1.5=6500) =>
         // 18300
-        assertEquals(new BigDecimal("18300.00"), out.getTotalCostYen());
+        assertEquals(new BigDecimal("18300"), out.getExpectedCostJpy());
 
         // recSellUsd = 183.80（Freeze例）
         assertEquals(new BigDecimal("183.80"), out.getRecSellUsd());
@@ -161,8 +161,8 @@ class PricingCalculatorTest {
         // RecSellUsd -> SellYen -> ProfitYen.
         // So ProfitYen ≈ RequiredProfit (due to reverse calc).
 
-        BigDecimal profit = res.getProfitYen();
-        BigDecimal cost = res.getTotalCostYen();
+        BigDecimal profit = res.getExpectedProfitJpy();
+        BigDecimal cost = res.getExpectedCostJpy();
         BigDecimal profitRate = profit.divide(cost, 4, java.math.RoundingMode.HALF_UP);
 
         if (Math.abs(profitRate.doubleValue() - 0.15) > 0.001) {

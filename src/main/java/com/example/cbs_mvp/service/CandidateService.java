@@ -87,7 +87,7 @@ public class CandidateService {
 
         PricingResponse pr = pricingCalculator.calculate(req);
 
-        GateResult cashGate = gateService.checkCashGate(pr.getTotalCostYen());
+        GateResult cashGate = gateService.checkCashGate(pr.getExpectedCostJpy());
         boolean gateCashOk = cashGate.isOk();
 
         PricingResult result = pricingRepo.findByCandidateId(candidateId).orElseGet(PricingResult::new);
@@ -96,16 +96,16 @@ public class CandidateService {
         result.setFxSafe(pr.getFxSafe());
         result.setSellPriceUsd(pr.getUseSellUsd());
         result.setSellPriceYen(pr.getSellYen());
-        result.setTotalCostYen(pr.getTotalCostYen());
+        result.setTotalCostYen(pr.getExpectedCostJpy());
         BigDecimal feeYen = calcRate(pr.getSellYen(), flags.get("EBAY_FEE_RATE"), "0.15");
         BigDecimal reserveYen = calcRate(pr.getSellYen(), flags.get("REFUND_RES_RATE"), "0.05");
         BigDecimal profitYen = pr.getSellYen()
-                .subtract(pr.getTotalCostYen())
+                .subtract(pr.getExpectedCostJpy())
                 .subtract(feeYen)
                 .subtract(reserveYen)
                 .setScale(2, RoundingMode.HALF_UP);
         BigDecimal profitRate = profitYen
-                .divide(pr.getTotalCostYen(), 6, RoundingMode.HALF_UP);
+                .divide(pr.getExpectedCostJpy(), 6, RoundingMode.HALF_UP);
 
         result.setEbayFeeYen(feeYen);
         result.setRefundReserveYen(reserveYen);

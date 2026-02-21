@@ -5,35 +5,30 @@ import java.math.BigDecimal;
 public class GateResult {
 
     private final boolean ok;
-    private final boolean capOk;
-    private final BigDecimal wcAvailable;
+    private final BigDecimal availableCash;
     private final BigDecimal refundReserve;
     private final BigDecimal openCommitments;
+    private final BigDecimal requiredCashBuffer;
 
     public GateResult(
             boolean ok,
-            boolean capOk,
-            BigDecimal wcAvailable,
+            BigDecimal availableCash,
             BigDecimal refundReserve,
-            BigDecimal openCommitments
-    ) {
+            BigDecimal openCommitments,
+            BigDecimal requiredCashBuffer) {
         this.ok = ok;
-        this.capOk = capOk;
-        this.wcAvailable = wcAvailable;
+        this.availableCash = availableCash;
         this.refundReserve = refundReserve;
         this.openCommitments = openCommitments;
+        this.requiredCashBuffer = requiredCashBuffer;
     }
 
     public boolean isOk() {
         return ok;
     }
 
-    public boolean isCapOk() {
-        return capOk;
-    }
-
-    public BigDecimal getWcAvailable() {
-        return wcAvailable;
+    public BigDecimal getAvailableCash() {
+        return availableCash;
     }
 
     public BigDecimal getRefundReserve() {
@@ -42,5 +37,9 @@ public class GateResult {
 
     public BigDecimal getOpenCommitments() {
         return openCommitments;
+    }
+
+    public BigDecimal getRequiredCashBuffer() {
+        return requiredCashBuffer;
     }
 }

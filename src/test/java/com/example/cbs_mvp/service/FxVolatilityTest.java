@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +24,7 @@ import com.example.cbs_mvp.pricing.PricingCalculator;
 import com.example.cbs_mvp.pricing.PricingRequest;
 import com.example.cbs_mvp.pricing.PricingResponse;
 import com.example.cbs_mvp.repo.CandidateRepository;
+import com.example.cbs_mvp.repo.PricingResultHistoryRepository;
 import com.example.cbs_mvp.repo.PricingResultRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +44,10 @@ public class FxVolatilityTest {
     StateTransitionService transitions;
     @Mock
     DraftService draftService;
+    @Mock
+    CandidateStateMachine stateMachine;
+    @Mock
+    PricingResultHistoryRepository historyRepo;
 
     @InjectMocks
     CandidateService candidateService;
@@ -74,7 +78,7 @@ public class FxVolatilityTest {
 
         // 3. Calculator Mock (New Rate = 100.00)
         PricingResponse calcRes = PricingResponse.builder()
-                .totalCostYen(new BigDecimal("1500"))
+                .expectedCostJpy(new BigDecimal("1500"))
                 .useSellUsd(new BigDecimal("20.00"))
                 .sellYen(new BigDecimal("2000"))
                 .gateProfitOk(true)
@@ -85,7 +89,9 @@ public class FxVolatilityTest {
 
         when(pricingCalculator.calculate(any(PricingRequest.class))).thenReturn(calcRes);
         when(gateService.checkCashGate(any())).thenReturn(
-                new GateResult(true, true, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO));
+                new GateResult(true, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO));
+        when(pricingRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(candidateRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Execute
         candidateService.recalcAllActiveCandidates(new BigDecimal("100.00"));
@@ -113,7 +119,7 @@ public class FxVolatilityTest {
 
         // 3. Calculator Mock (New Rate = 50.00 -> Drastic Drop)
         PricingResponse calcRes = PricingResponse.builder()
-                .totalCostYen(new BigDecimal("1500"))
+                .expectedCostJpy(new BigDecimal("1500"))
                 .useSellUsd(new BigDecimal("20.00"))
                 .sellYen(new BigDecimal("1000"))
                 .gateProfitOk(false)
@@ -121,7 +127,9 @@ public class FxVolatilityTest {
 
         when(pricingCalculator.calculate(any(PricingRequest.class))).thenReturn(calcRes);
         when(gateService.checkCashGate(any())).thenReturn(
-                new GateResult(true, true, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO));
+                new GateResult(true, BigDecimal.TEN, BigDecimal.ONE, BigDecimal.ZERO, BigDecimal.ZERO));
+        when(pricingRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(candidateRepo.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         // Execute
         candidateService.recalcAllActiveCandidates(new BigDecimal("50.00"));

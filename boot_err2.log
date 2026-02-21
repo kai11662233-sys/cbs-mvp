@@ -2,10 +2,13 @@
 FAILURE: Build failed with an exception.
 
 * What went wrong:
-Value 'C:\Users\h-iwa\.jdks\ms-17.0.15' given for org.gradle.java.home Gradle property is invalid (Java home supplied is invalid)
+Execution failed for task ':bootRun'.
+> Process 'command 'C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe'' finished with non-zero exit value 1
 
 * Try:
 > Run with --stacktrace option to get the stack trace.
 > Run with --info or --debug option to get more log output.
 > Run with --scan to get full insights.
 > Get more help at https://help.gradle.org.
+
+BUILD FAILED in 5s

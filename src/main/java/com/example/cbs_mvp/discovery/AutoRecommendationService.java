@@ -122,8 +122,8 @@ public class AutoRecommendationService {
 
             PricingResponse res = pricingCalculator.calculate(request);
 
-            BigDecimal profitYen = res.getProfitYen();
-            BigDecimal totalCost = res.getTotalCostYen();
+            BigDecimal profitYen = res.getExpectedProfitJpy();
+            BigDecimal totalCost = res.getExpectedCostJpy();
             BigDecimal sellYen = res.getSellYen();
             BigDecimal recSellUsd = res.getRecSellUsd();
 

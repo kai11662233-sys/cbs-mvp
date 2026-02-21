@@ -33,12 +33,12 @@ public class GateController {
 
         return ResponseEntity.ok(Map.of(
                 "ok", gr.isOk(),
-                "capOk", gr.isCapOk(),
-                "wcAvailable", gr.getWcAvailable(),
+                "availableCash", gr.getAvailableCash(),
+                "requiredCashBuffer", gr.getRequiredCashBuffer(),
                 "refundReserve", gr.getRefundReserve(),
-                "openCommitments", gr.getOpenCommitments()
-        ));
+                "openCommitments", gr.getOpenCommitments()));
     }
 
-    public record GateCheckRequest(BigDecimal newCostEstimateTotalYen) {}
+    public record GateCheckRequest(BigDecimal newCostEstimateTotalYen) {
+    }
 }

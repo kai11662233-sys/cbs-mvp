@@ -29,8 +29,8 @@ public class CashController {
             "REFUND_FIX_RES",
             "RECENT_SALES_30D",
             "REFUND_RES_RATIO",
-            "WC_CAP_RATIO"
-    );
+            "WC_CAP_RATIO",
+            "REQUIRED_CASH_BUFFER");
 
     private final CashService cashService;
     private final SystemFlagService flags;
@@ -41,8 +41,7 @@ public class CashController {
             CashService cashService,
             SystemFlagService flags,
             OpsKeyService opsKeyService,
-            StateTransitionService transitions
-    ) {
+            StateTransitionService transitions) {
         this.cashService = cashService;
         this.flags = flags;
         this.opsKeyService = opsKeyService;
@@ -68,21 +67,19 @@ public class CashController {
         GateResult gr = cashService.checkGate(req.newCostEstimateTotalYen);
         return ResponseEntity.ok(Map.of(
                 "ok", gr.isOk(),
-                "capOk", gr.isCapOk(),
-                "wcAvailableYen", gr.getWcAvailable(),
+                "availableCashYen", gr.getAvailableCash(),
+                "requiredCashBufferYen", gr.getRequiredCashBuffer(),
                 "refundReserveYen", gr.getRefundReserve(),
                 "openCommitmentsYen", gr.getOpenCommitments(),
                 "newCostEstimateTotalYen", req.newCostEstimateTotalYen,
-                "ts", Instant.now().toString()
-        ));
+                "ts", Instant.now().toString()));
     }
 
     @PostMapping("/flags")
     @Transactional
     public ResponseEntity<?> updateFlags(
             @RequestHeader(value = "X-OPS-KEY", required = false) String opsKey,
-            @RequestBody(required = false) Map<String, Object> body
-    ) {
+            @RequestBody(required = false) Map<String, Object> body) {
         if (!opsKeyService.isValid(opsKey)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid ops key"));
         }
@@ -139,8 +136,7 @@ public class CashController {
                 "CASH_FLAGS_UPDATED",
                 "updated keys: " + String.join(",", updatedKeys),
                 "SYSTEM",
-                cid()
-        );
+                cid());
 
         return ResponseEntity.ok(cashService.getStatus());
     }
