@@ -31,22 +31,38 @@ public class WebhookSignatureVerifier {
             return false;
         }
         try {
+            // 正規化: sha256= プレフィックスの除去
+            String targetSignature = signature.trim();
+            if (targetSignature.toLowerCase().startsWith("sha256=")) {
+                targetSignature = targetSignature.substring(7);
+            }
+
             Mac mac = Mac.getInstance(ALGORITHM);
             mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), ALGORITHM));
-            byte[] hash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
-            String computed = bytesToHex(hash);
-            return computed.equalsIgnoreCase(signature);
+            byte[] computedHash = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+
+            // 署名をバイト配列にデコードして比較（定数時間比較）
+            byte[] providedHash = hexToBytes(targetSignature);
+            if (providedHash == null) {
+                return false;
+            }
+
+            return java.security.MessageDigest.isEqual(computedHash, providedHash);
         } catch (Exception e) {
             log.error("HMAC署名検証中にエラーが発生しました", e);
             return false;
         }
     }
 
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder(bytes.length * 2);
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
+    private static byte[] hexToBytes(String hex) {
+        if (hex == null || hex.length() % 2 != 0) {
+            return null;
         }
-        return sb.toString();
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < hex.length(); i += 2) {
+            bytes[i / 2] = (byte) ((Character.digit(hex.charAt(i), 16) << 4)
+                    + Character.digit(hex.charAt(i + 1), 16));
+        }
+        return bytes;
     }
 }

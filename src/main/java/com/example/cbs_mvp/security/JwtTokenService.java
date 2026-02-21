@@ -28,6 +28,9 @@ public class JwtTokenService {
     @Value("${jwt.expiration-hours:24}")
     private int expirationHours;
 
+    @Value("${spring.profiles.active:stub}")
+    private String activeProfile;
+
     private SecretKey key;
     private boolean usingDefaultSecret = false;
 
@@ -41,6 +44,14 @@ public class JwtTokenService {
             log.warn("This is INSECURE for production use.");
             log.warn("Set JWT_SECRET environment variable.");
             log.warn("======================================");
+
+            // 本番環境（prod/real）では強制終了
+            boolean isProd = "prod".equals(activeProfile) || "real".equals(activeProfile);
+            if (isProd) {
+                log.error("CRITICAL ERROR: Default JWT secret is NOT ALLOWED in production!");
+                throw new IllegalStateException("Default JWT secret is not allowed in prod/real profiles. " +
+                        "Set JWT_SECRET environment variable.");
+            }
         }
 
         // 最低長チェック

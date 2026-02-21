@@ -21,6 +21,8 @@ import com.example.cbs_mvp.repo.OrderRepository;
 import com.example.cbs_mvp.fx.FxRateService;
 import com.example.cbs_mvp.service.OrderImportService;
 import com.example.cbs_mvp.service.OrderImportService.SoldImportCommand;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @RestController
 @RequestMapping("/ebay/webhook")
@@ -34,6 +36,7 @@ public class EbayWebhookController {
     private final OrderImportService orderImportService;
     private final FxRateService fxRateService;
     private final WebhookSignatureVerifier signatureVerifier;
+    private final ObjectMapper objectMapper;
 
     @Value("${EBAY_WEBHOOK_SECRET:}")
     private String webhookSecret;
@@ -47,13 +50,15 @@ public class EbayWebhookController {
             EbayDraftRepository draftRepository,
             OrderImportService orderImportService,
             FxRateService fxRateService,
-            WebhookSignatureVerifier signatureVerifier) {
+            WebhookSignatureVerifier signatureVerifier,
+            ObjectMapper objectMapper) {
         this.ebayOrderClient = ebayOrderClient;
         this.orderRepository = orderRepository;
         this.draftRepository = draftRepository;
         this.orderImportService = orderImportService;
         this.fxRateService = fxRateService;
         this.signatureVerifier = signatureVerifier;
+        this.objectMapper = objectMapper;
     }
 
     @PostMapping
@@ -83,12 +88,10 @@ public class EbayWebhookController {
             log.debug("Webhook署名検証OK");
         }
 
-        // パース
         Map<String, Object> payload;
         try {
-            payload = new com.fasterxml.jackson.databind.ObjectMapper().readValue(
-                    rawBody, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
-                    });
+            payload = objectMapper.readValue(rawBody, new TypeReference<Map<String, Object>>() {
+            });
         } catch (Exception e) {
             log.error("Webhook payload のパースに失敗しました", e);
             return ResponseEntity.badRequest().body("invalid JSON");
