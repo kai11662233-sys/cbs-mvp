@@ -34,20 +34,22 @@ class DiscoveryIngestServiceTest {
         @Mock
         private StateTransitionService transitions;
 
+        private DiscoveryItemValidator validator;
         private DiscoveryIngestService service;
 
         @BeforeEach
         void setUp() {
-                service = new DiscoveryIngestService(repository, scoringService, pricingCalculator, fxRateService,
+                validator = new DiscoveryItemValidator();
+                service = new DiscoveryIngestService(repository, scoringService, validator, pricingCalculator,
+                                fxRateService,
                                 transitions);
         }
 
         @Test
         void ingestFromCsv_singleNewItem_insertsSuccessfully() throws Exception {
-                // Arrange
-                String csv = "source_url,title,condition,source_type,category_hint,price_yen,shipping_yen,weight_kg,notes\n"
-                                +
-                                "https://example.com/item1,Test Item,NEW,RETAIL,Electronics,10000,500,1.5,Test notes\n";
+                // parseCsvLine column order: sourceUrl, title, priceYen, weightKg, condition
+                String csv = "source_url,title,price_yen,weight_kg,condition\n" +
+                                "https://example.com/item1,Test Item,10000,1.5,NEW\n";
                 InputStream inputStream = new ByteArrayInputStream(csv.getBytes());
 
                 when(repository.findBySourceUrl("https://example.com/item1")).thenReturn(java.util.Optional.empty());
@@ -60,10 +62,8 @@ class DiscoveryIngestServiceTest {
                                                 .build());
                 when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-                // Act
                 CsvIngestResultResponse result = service.ingestFromCsv(inputStream);
 
-                // Assert
                 assertEquals(1, result.inserted());
                 assertEquals(0, result.updated());
                 assertEquals(0, result.errors().size());
@@ -72,10 +72,9 @@ class DiscoveryIngestServiceTest {
 
         @Test
         void ingestFromCsv_existingItem_updatesSuccessfully() throws Exception {
-                // Arrange
-                String csv = "source_url,title,condition,source_type,category_hint,price_yen,shipping_yen,weight_kg,notes\n"
-                                +
-                                "https://example.com/item2,Updated Title,USED,OFFICIAL,Toys,20000,800,2.0,\n";
+                // parseCsvLine column order: sourceUrl, title, priceYen, weightKg, condition
+                String csv = "source_url,title,price_yen,weight_kg,condition\n" +
+                                "https://example.com/item2,Updated Title,20000,2.0,USED\n";
                 InputStream inputStream = new ByteArrayInputStream(csv.getBytes());
 
                 DiscoveryItem existingItem = new DiscoveryItem();
@@ -94,10 +93,8 @@ class DiscoveryIngestServiceTest {
                                                 .build());
                 when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-                // Act
                 CsvIngestResultResponse result = service.ingestFromCsv(inputStream);
 
-                // Assert
                 assertEquals(0, result.inserted());
                 assertEquals(1, result.updated());
                 assertEquals(0, result.errors().size());
@@ -107,11 +104,11 @@ class DiscoveryIngestServiceTest {
 
         @Test
         void ingestFromCsv_invalidRow_recordsError() throws Exception {
-                // Arrange
-                String csv = "source_url,title,condition,source_type,category_hint,price_yen\n" +
-                                "https://example.com/item3,Valid Item,NEW,RETAIL,Electronics,10000\n" +
-                                ",Missing URL,NEW,RETAIL,Electronics,5000\n" +
-                                "https://example.com/item4,No Price,NEW,RETAIL,Electronics,\n";
+                // parseCsvLine: sourceUrl, title, priceYen, weightKg, condition
+                String csv = "source_url,title,price_yen,weight_kg,condition\n" +
+                                "https://example.com/item3,Valid Item,10000,1.0,NEW\n" +
+                                ",,,,\n" +
+                                "https://example.com/item4,No Price,,,NEW\n";
                 InputStream inputStream = new ByteArrayInputStream(csv.getBytes());
 
                 when(repository.findBySourceUrl("https://example.com/item3")).thenReturn(java.util.Optional.empty());
@@ -124,14 +121,12 @@ class DiscoveryIngestServiceTest {
                                                 .build());
                 when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-                // Act
                 CsvIngestResultResponse result = service.ingestFromCsv(inputStream);
 
-                // Assert
-                assertEquals(1, result.inserted()); // Only first row
+                assertEquals(1, result.inserted()); // Only first row succeeds
                 assertEquals(0, result.updated());
                 assertEquals(2, result.errors().size()); // 2 error rows
-                assertTrue(result.errors().get(0).message().contains("source_url"));
-                assertTrue(result.errors().get(1).message().contains("price_yen"));
+                assertTrue(result.errors().get(0).message().contains("sourceUrl"));
+                assertTrue(result.errors().get(1).message().contains("priceYen"));
         }
 }

@@ -40,6 +40,9 @@ public class DiscoveryController {
     private final DiscoveryIngestService ingestService;
     private final List<ExternalItemSearchService> searchServices;
     private final AutoRecommendationService autoRecommendationService;
+    private final com.example.cbs_mvp.fx.FxRateService fxRateService;
+    private final com.example.cbs_mvp.pricing.PricingCalculator pricingCalculator;
+    private final com.example.cbs_mvp.service.GateService gateService;
 
     public DiscoveryController(
             OpsKeyService opsKeyService,
@@ -47,13 +50,19 @@ public class DiscoveryController {
             DiscoveryDraftOrchestrator orchestrator,
             DiscoveryIngestService ingestService,
             List<ExternalItemSearchService> searchServices,
-            AutoRecommendationService autoRecommendationService) {
+            AutoRecommendationService autoRecommendationService,
+            com.example.cbs_mvp.fx.FxRateService fxRateService,
+            com.example.cbs_mvp.pricing.PricingCalculator pricingCalculator,
+            com.example.cbs_mvp.service.GateService gateService) {
         this.opsKeyService = opsKeyService;
         this.discoveryService = discoveryService;
         this.orchestrator = orchestrator;
         this.ingestService = ingestService;
         this.searchServices = searchServices;
         this.autoRecommendationService = autoRecommendationService;
+        this.fxRateService = fxRateService;
+        this.pricingCalculator = pricingCalculator;
+        this.gateService = gateService;
     }
 
     /**
@@ -298,31 +307,72 @@ public class DiscoveryController {
     }
 
     private Map<String, Object> toDetailDto(DiscoveryItem item) {
-        return Map.ofEntries(
-                Map.entry("id", item.getId()),
-                Map.entry("sourceUrl", item.getSourceUrl()),
-                Map.entry("sourceDomain", item.getSourceDomain() != null ? item.getSourceDomain() : ""),
-                Map.entry("sourceType", item.getSourceType()),
-                Map.entry("title", item.getTitle() != null ? item.getTitle() : ""),
-                Map.entry("condition", item.getCondition()),
-                Map.entry("categoryHint", item.getCategoryHint() != null ? item.getCategoryHint() : ""),
-                Map.entry("priceYen", item.getPriceYen()),
-                Map.entry("shippingYen", item.getShippingYen() != null ? item.getShippingYen() : ""),
-                Map.entry("weightKg", item.getWeightKg() != null ? item.getWeightKg() : ""),
-                Map.entry("safetyScore", item.getSafetyScore()),
-                Map.entry("profitScore", item.getProfitScore()),
-                Map.entry("freshnessScore", item.getFreshnessScore()),
-                Map.entry("overallScore", item.getOverallScore()),
-                Map.entry("riskFlags", item.getRiskFlags() != null ? item.getRiskFlags() : List.of()),
-                Map.entry("safetyBreakdown", item.getSafetyBreakdown() != null ? item.getSafetyBreakdown() : List.of()),
-                Map.entry("snapshot", item.getSnapshot() != null ? item.getSnapshot() : Map.of()),
-                Map.entry("status", item.getStatus()),
-                Map.entry("linkedCandidateId", item.getLinkedCandidateId() != null ? item.getLinkedCandidateId() : ""),
-                Map.entry("linkedDraftId", item.getLinkedDraftId() != null ? item.getLinkedDraftId() : ""),
-                Map.entry("notes", item.getNotes() != null ? item.getNotes() : ""),
-                Map.entry("lastCheckedAt", item.getLastCheckedAt() != null ? item.getLastCheckedAt().toString() : ""),
-                Map.entry("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : ""),
-                Map.entry("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : ""),
-                Map.entry("isDraftable", item.isDraftable()));
+        // Pricing概算を計算
+        Map<String, Object> pricingEstimate = calculatePricingEstimate(item);
+
+        var entries = new java.util.LinkedHashMap<String, Object>();
+        entries.put("id", item.getId());
+        entries.put("sourceUrl", item.getSourceUrl());
+        entries.put("sourceDomain", item.getSourceDomain() != null ? item.getSourceDomain() : "");
+        entries.put("sourceType", item.getSourceType());
+        entries.put("title", item.getTitle() != null ? item.getTitle() : "");
+        entries.put("condition", item.getCondition());
+        entries.put("categoryHint", item.getCategoryHint() != null ? item.getCategoryHint() : "");
+        entries.put("priceYen", item.getPriceYen());
+        entries.put("shippingYen", item.getShippingYen() != null ? item.getShippingYen() : "");
+        entries.put("weightKg", item.getWeightKg() != null ? item.getWeightKg() : "");
+        entries.put("safetyScore", item.getSafetyScore());
+        entries.put("profitScore", item.getProfitScore());
+        entries.put("freshnessScore", item.getFreshnessScore());
+        entries.put("overallScore", item.getOverallScore());
+        entries.put("riskFlags", item.getRiskFlags() != null ? item.getRiskFlags() : List.of());
+        entries.put("safetyBreakdown", item.getSafetyBreakdown() != null ? item.getSafetyBreakdown() : List.of());
+        entries.put("snapshot", item.getSnapshot() != null ? item.getSnapshot() : Map.of());
+        entries.put("status", item.getStatus());
+        entries.put("linkedCandidateId", item.getLinkedCandidateId() != null ? item.getLinkedCandidateId() : "");
+        entries.put("linkedDraftId", item.getLinkedDraftId() != null ? item.getLinkedDraftId() : "");
+        entries.put("notes", item.getNotes() != null ? item.getNotes() : "");
+        entries.put("lastCheckedAt", item.getLastCheckedAt() != null ? item.getLastCheckedAt().toString() : "");
+        entries.put("createdAt", item.getCreatedAt() != null ? item.getCreatedAt().toString() : "");
+        entries.put("updatedAt", item.getUpdatedAt() != null ? item.getUpdatedAt().toString() : "");
+        entries.put("isDraftable", item.isDraftable());
+        entries.put("pricingEstimate", pricingEstimate);
+        return entries;
+    }
+
+    private Map<String, Object> calculatePricingEstimate(DiscoveryItem item) {
+        try {
+            com.example.cbs_mvp.fx.FxRateService.FxRateResult fxResult = fxRateService.getCurrentRate();
+            java.math.BigDecimal fxRate = fxResult.isSuccess() && fxResult.rate() != null
+                    ? fxResult.rate()
+                    : new java.math.BigDecimal("150.0");
+
+            com.example.cbs_mvp.pricing.PricingRequest request = new com.example.cbs_mvp.pricing.PricingRequest();
+            request.setSourcePriceYen(item.getPriceYen());
+            request.setWeightKg(item.getWeightKg());
+            request.setSizeTier(null);
+            request.setFxRate(fxRate);
+            request.setTargetSellUsd(null);
+
+            com.example.cbs_mvp.pricing.PricingResponse response = pricingCalculator.calculate(request);
+            com.example.cbs_mvp.service.GateResult gateResult = gateService.checkCashGate(
+                    response.getExpectedCostJpy() != null ? response.getExpectedCostJpy() : java.math.BigDecimal.ZERO);
+
+            var estimate = new java.util.LinkedHashMap<String, Object>();
+            estimate.put("recSellUsd", response.getRecSellUsd());
+            estimate.put("intlShipCostYen", response.getIntlShipCostYen());
+            estimate.put("expectedProfitJpy", response.getExpectedProfitJpy());
+            estimate.put("expectedCostJpy", response.getExpectedCostJpy());
+            estimate.put("profitRate", response.getProfitRate());
+            estimate.put("gateProfitOk", response.isGateProfitOk());
+            estimate.put("gateCashOk", gateResult.isOk());
+            estimate.put("fxRate", fxRate);
+            estimate.put("availableCash", gateResult.getAvailableCash());
+            estimate.put("requiredCashBuffer", gateResult.getRequiredCashBuffer());
+            estimate.put("warn", response.getWarn() != null ? response.getWarn() : "");
+            return estimate;
+        } catch (Exception e) {
+            return Map.of("error", "pricing calculation failed: " + e.getMessage());
+        }
     }
 }

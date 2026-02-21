@@ -977,6 +977,12 @@
                     <div id="d_riskFlags">--</div>
                 </div>
 
+                <!-- Pricing概算 & Gate結果 -->
+                <div id="d_pricingSection" style="margin-bottom: 1rem; background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <label style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">💰 Pricing概算 & Gate判定</label>
+                    <div id="d_pricingContent">--</div>
+                </div>
+
                 <div style="margin-bottom: 1rem;">
                     <label>URL</label>
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
@@ -992,8 +998,8 @@
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button class="btn btn-outline" onclick="closeDiscoveryModal()">閉じる</button>
                     <button class="btn btn-primary" onclick="refreshDiscoveryItem()">🔄 Refresh</button>
-                    <button class="btn btn-success" id="d_draftBtn" onclick="draftDiscoveryItem()" disabled>📝
-                        Draft作成</button>
+                    <button class="btn btn-success" id="d_draftBtn" onclick="draftDiscoveryItem()" disabled>✅
+                        Draft作成を承認</button>
                 </div>
             </div>
         </div>
@@ -1794,19 +1800,52 @@
                     document.getElementById('d_riskFlags').textContent = 'なし';
                 }
 
+                // Pricing Estimate & Gate
+                const pe = item.pricingEstimate;
+                if (pe && !pe.error) {
+                    const profitPct = pe.profitRate ? (pe.profitRate * 100).toFixed(1) : '0.0';
+                    const profitOkBadge = pe.gateProfitOk
+                        ? '<span class="badge success">✅ Profit OK</span>'
+                        : '<span class="badge danger">❌ Profit NG</span>';
+                    const cashOkBadge = pe.gateCashOk
+                        ? '<span class="badge success">✅ Cash OK</span>'
+                        : '<span class="badge danger">❌ Cash NG</span>';
+
+                    document.getElementById('d_pricingContent').innerHTML = `
+                        <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                            ${profitOkBadge} ${cashOkBadge}
+                            ${pe.warn ? `<span class="badge warning">${pe.warn}</span>` : ''}
+                        </div>
+                        <table style="width: 100%; font-size: 0.875rem;">
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">推奨売価(USD)</td><td style="text-align: right;">$${pe.recSellUsd ? Number(pe.recSellUsd).toFixed(2) : '--'}</td></tr>
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">国際送料(JPY)</td><td style="text-align: right;">${formatYen(pe.intlShipCostYen)}</td></tr>
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">コスト合計(JPY)</td><td style="text-align: right;">${formatYen(pe.expectedCostJpy)}</td></tr>
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">見込み利益(JPY)</td><td style="text-align: right; font-weight: 600; color: ${pe.expectedProfitJpy > 0 ? 'var(--success)' : 'var(--danger)'}">${formatYen(pe.expectedProfitJpy)}</td></tr>
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">利益率</td><td style="text-align: right; font-weight: 600; color: ${pe.gateProfitOk ? 'var(--success)' : 'var(--danger)'}">${profitPct}%</td></tr>
+                            <tr style="border-top: 1px solid var(--border);"><td style="color: var(--text-secondary); padding: 0.25rem 0;">為替レート</td><td style="text-align: right;">¥${pe.fxRate ? Number(pe.fxRate).toFixed(2) : '--'}</td></tr>
+                            <tr><td style="color: var(--text-secondary); padding: 0.25rem 0;">利用可能資金</td><td style="text-align: right;">${formatYen(pe.availableCash)}</td></tr>
+                        </table>
+                    `;
+                } else {
+                    document.getElementById('d_pricingContent').innerHTML = `<div style="color: var(--text-secondary);">Pricing情報なし${pe && pe.error ? ': ' + pe.error : ''}</div>`;
+                }
+
                 document.getElementById('d_url').textContent = item.sourceUrl;
                 document.getElementById('d_url').href = item.sourceUrl;
 
                 // Draft button
                 const draftBtn = document.getElementById('d_draftBtn');
-                draftBtn.disabled = !item.isDraftable || item.status === 'DRAFTED';
+                const allGatesOk = pe && pe.gateProfitOk && pe.gateCashOk;
+                draftBtn.disabled = !item.isDraftable || item.status === 'DRAFTED' || !allGatesOk;
                 if (item.status === 'DRAFTED') {
                     draftBtn.textContent = '✓ Draft済み';
                     document.getElementById('discoveryModalMsg').innerHTML = '';
+                } else if (!allGatesOk && item.isDraftable) {
+                    draftBtn.textContent = '✅ Draft作成を承認';
+                    document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-warning">⚠️ Gate未通過のためDraft作成不可</div>';
                 } else {
-                    draftBtn.textContent = '📝 Draft作成';
-                    // Gate Check
-                    await checkCashGate(item.priceYen, item.shippingYen || 0);
+                    draftBtn.textContent = '✅ Draft作成を承認';
+                    document.getElementById('discoveryModalMsg').innerHTML = '';
                 }
 
                 document.getElementById('discoveryModal').classList.add('active');

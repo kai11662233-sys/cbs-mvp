@@ -41,6 +41,7 @@ public class DiscoveryIngestService {
 
     private final DiscoveryItemRepository repository;
     private final DiscoveryScoringService scoringService;
+    private final DiscoveryItemValidator validator;
     private final PricingCalculator pricingCalculator;
     private final FxRateService fxRateService;
     private final StateTransitionService transitions;
@@ -48,11 +49,13 @@ public class DiscoveryIngestService {
     public DiscoveryIngestService(
             DiscoveryItemRepository repository,
             DiscoveryScoringService scoringService,
+            DiscoveryItemValidator validator,
             PricingCalculator pricingCalculator,
             FxRateService fxRateService,
             StateTransitionService transitions) {
         this.repository = repository;
         this.scoringService = scoringService;
+        this.validator = validator;
         this.pricingCalculator = pricingCalculator;
         this.fxRateService = fxRateService;
         this.transitions = transitions;
@@ -66,10 +69,9 @@ public class DiscoveryIngestService {
         List<CsvIngestError> errors = new ArrayList<>();
         int inserted = 0;
         int updated = 0;
-        int rowNum = 1; // ヘッダ行を1として開始
+        int rowNum = 1;
 
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-            // ヘッダ行を読み飛ばす
             String headerLine = reader.readLine();
             if (headerLine == null) {
                 errors.add(new CsvIngestError(1, "Empty file", ""));
@@ -83,12 +85,12 @@ public class DiscoveryIngestService {
 
                 try {
                     DiscoverySeed seed = parseCsvLine(line);
-                    if (seed.sourceUrl() == null || seed.sourceUrl().isBlank()) {
-                        errors.add(new CsvIngestError(rowNum, "source_url is required", rawLine));
-                        continue;
-                    }
-                    if (seed.priceYen() == null) {
-                        errors.add(new CsvIngestError(rowNum, "price_yen is required", rawLine));
+
+                    // バリデーション
+                    var validation = validator.validate(seed);
+                    if (!validation.ok()) {
+                        errors.add(new CsvIngestError(rowNum,
+                                String.join("; ", validation.errors()), rawLine));
                         continue;
                     }
 
@@ -114,18 +116,34 @@ public class DiscoveryIngestService {
      * @return true if inserted (new), false if updated (existing)
      */
     public boolean upsert(DiscoverySeed seed) {
-        Optional<DiscoveryItem> existingOpt = repository.findBySourceUrl(seed.sourceUrl());
+        // --- URL正規化 ---
+        String normalizedUrl = validator.normalizeUrl(seed.sourceUrl());
+
+        // --- URL完全一致での重複チェック ---
+        Optional<DiscoveryItem> existingOpt = repository.findBySourceUrl(normalizedUrl);
+
+        // --- URL不一致の場合、タイトル+価格帯で疑似重複判定 ---
+        if (existingOpt.isEmpty() && seed.title() != null && !seed.title().isBlank()
+                && seed.priceYen() != null) {
+            BigDecimal priceLow = seed.priceYen().multiply(new BigDecimal("0.80"));
+            BigDecimal priceHigh = seed.priceYen().multiply(new BigDecimal("1.20"));
+            var titleMatches = repository.findByTitleAndPriceRange(
+                    seed.title(), priceLow, priceHigh);
+            if (!titleMatches.isEmpty()) {
+                existingOpt = Optional.of(titleMatches.get(0));
+                log.info("タイトル+価格帯で疑似重複を検出: title='{}' → 既存ID={}",
+                        seed.title(), titleMatches.get(0).getId());
+            }
+        }
 
         DiscoveryItem item;
         boolean isNew;
         BigDecimal previousPriceYen = null;
 
         if (existingOpt.isPresent()) {
-            // 既存: 更新
             item = existingOpt.get();
             previousPriceYen = item.getPriceYen();
             isNew = false;
-            // フィールド更新
             if (seed.title() != null && !seed.title().isBlank())
                 item.setTitle(seed.title());
             if (seed.condition() != null && !seed.condition().isBlank())
@@ -143,10 +161,9 @@ public class DiscoveryIngestService {
             if (seed.notes() != null)
                 item.setNotes(seed.notes());
         } else {
-            // 新規: 作成
             item = new DiscoveryItem();
-            item.setSourceUrl(seed.sourceUrl());
-            item.setSourceDomain(extractDomain(seed.sourceUrl()));
+            item.setSourceUrl(normalizedUrl);
+            item.setSourceDomain(extractDomain(normalizedUrl));
             item.setSourceType(seed.sourceType() != null ? seed.sourceType() : "OTHER");
             item.setTitle(seed.title());
             item.setCondition(seed.condition() != null ? seed.condition() : "UNKNOWN");
@@ -159,7 +176,6 @@ public class DiscoveryIngestService {
             isNew = true;
         }
 
-        // 共通: lastCheckedAt更新、スナップショット更新
         item.setLastCheckedAt(OffsetDateTime.now());
 
         Map<String, Object> snapshot = item.getSnapshot();
@@ -176,20 +192,35 @@ public class DiscoveryIngestService {
         }
         item.setSnapshot(snapshot);
 
+        // --- NGキーワードチェック ---
+        if (validator.containsNgKeyword(item.getTitle())) {
+            List<String> ngWords = validator.findNgKeywords(item.getTitle());
+            List<String> flags = item.getRiskFlags() != null
+                    ? new ArrayList<>(item.getRiskFlags())
+                    : new ArrayList<>();
+            for (String ng : ngWords) {
+                String flag = "NG_KEYWORD:" + ng;
+                if (!flags.contains(flag))
+                    flags.add(flag);
+            }
+            item.setRiskFlags(flags);
+            log.info("NGキーワード検出: title='{}' keywords={}", item.getTitle(), ngWords);
+        }
+
         // ProfitScore概算計算
         ProfitEstimate estimate = calculateProfitEstimate(item);
 
-        // スコア再計算
         scoringService.recalculateScores(
                 item,
                 previousPriceYen,
                 estimate.profitRate(),
                 estimate.gateProfitOk(),
-                true // gateCashOk
-        );
+                true);
 
         // ステータス更新
         if (item.hasRestrictedCategory()) {
+            item.setStatus("NG");
+        } else if (validator.containsNgKeyword(item.getTitle())) {
             item.setStatus("NG");
         } else if (item.getSafetyScore() < 50) {
             item.setStatus("NG");
@@ -199,7 +230,6 @@ public class DiscoveryIngestService {
 
         item = repository.save(item);
 
-        // 監査ログ（新規の場合のみ記録）
         if (isNew) {
             transitions.log("DISCOVERY_ITEM", item.getId(), null, "NEW", null, "CSV Ingest", "SYSTEM", cid());
         }
