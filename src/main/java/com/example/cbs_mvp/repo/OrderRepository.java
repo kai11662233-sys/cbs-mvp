@@ -14,22 +14,22 @@ import com.example.cbs_mvp.entity.Order;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByState(String state, Pageable pageable);
-    Optional<Order> findByEbayOrderKey(String ebayOrderKey);
+        List<Order> findByState(String state, Pageable pageable);
 
-    @Query("""
-            SELECT DISTINCT o FROM Order o
-            JOIN Fulfillment f ON f.orderId = o.orderId
-            WHERE o.state = :state
-              AND o.trackingRetryTerminalAt IS NULL
-              AND (o.trackingNextRetryAt IS NULL OR o.trackingNextRetryAt <= :now)
-              AND f.outboundTracking IS NOT NULL
-              AND f.outboundTracking <> ''
-            ORDER BY o.updatedAt ASC
-            """)
-    List<Order> findTrackingRetryTargets(
-            @Param("state") String state,
-            @Param("now") LocalDateTime now,
-            Pageable pageable
-    );
+        Optional<Order> findByEbayOrderKey(String ebayOrderKey);
+
+        @Query("""
+                        SELECT DISTINCT o FROM Order o
+                        JOIN Fulfillment f ON f.orderId = o.orderId
+                        WHERE o.state = :state
+                          AND o.trackingRetryTerminalAt IS NULL
+                          AND (o.trackingNextRetryAt IS NULL OR o.trackingNextRetryAt <= :now)
+                          AND f.outboundTracking IS NOT NULL
+                          AND f.outboundTracking <> ''
+                        ORDER BY o.updatedAt ASC
+                        """)
+        List<Order> findTrackingRetryTargets(
+                        @Param("state") String state,
+                        @Param("now") LocalDateTime now,
+                        Pageable pageable);
 }

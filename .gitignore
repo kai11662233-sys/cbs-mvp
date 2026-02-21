@@ -38,3 +38,7 @@ out/
 
 # Environment variables
 .env
+
+# Local logs
+boot_debug.log
+boot.err
