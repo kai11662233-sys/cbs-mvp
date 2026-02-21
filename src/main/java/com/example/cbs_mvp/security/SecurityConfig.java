@@ -26,32 +26,17 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // 公開エンドポイント
+                        // --- 公開エンドポイント（ホワイトリスト） ---
                         .requestMatchers("/", "/index.html").permitAll()
-                        .requestMatchers("/error").permitAll() // エラー詳細が見えるようにする
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/*.html", "/*.css", "/*.js", "/*.png", "/*.ico").permitAll()
                         .requestMatchers("/health", "/health/**").permitAll()
                         .requestMatchers("/auth/login").permitAll()
-                        .requestMatchers("/auth/change-password").authenticated() // 認証必須
                         .requestMatchers("/ops/status").permitAll()
-                        .requestMatchers("/pricing/**").permitAll()
-                        .requestMatchers("/fx/rate").permitAll() // Price calc needs this
-                        .requestMatchers("/ebay/webhook").permitAll()
-                        .requestMatchers("/discovery/**").permitAll() // OPS-KEY認証はControllerで実施
+                        .requestMatchers("/ebay/webhook").permitAll() // 署名検証はController内で実施
 
-                        // OPS-KEY or JWT 認証が必要
-                        .requestMatchers("/ops/**").authenticated()
-                        .requestMatchers("/cash/**").permitAll() // OpsKey check in Controller
-                        .requestMatchers("/candidates/**").authenticated()
-                        .requestMatchers("/orders/**").authenticated()
-                        .requestMatchers("/drafts/**").authenticated()
-                        .requestMatchers("/procurement/**").authenticated()
-                        .requestMatchers("/threepl/**").authenticated()
-                        .requestMatchers("/fx/**").authenticated()
-
-                        // その他は認証必須
-                        // .anyRequest().authenticated())
-                        .anyRequest().permitAll())
+                        // --- その他は全て認証必須（deny-by-default） ---
+                        .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthFilter(jwtTokenService), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

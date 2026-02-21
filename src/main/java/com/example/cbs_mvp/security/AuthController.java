@@ -17,16 +17,24 @@ import com.example.cbs_mvp.ops.OpsKeyService;
 import com.example.cbs_mvp.ops.SystemFlagService;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
+
     private final JwtTokenService jwtTokenService;
     private final SystemFlagService flagService;
     private final PasswordEncoder passwordEncoder;
     private final OpsKeyService opsKeyService;
+
+    @Value("${cbs.allow-default-admin:false}")
+    private boolean allowDefaultAdmin;
 
     /**
      * ログイン: ユーザー名/パスワードでJWTトークン発行
@@ -51,12 +59,17 @@ public class AuthController {
         String storedHash = flagService.get("USER_" + username.toUpperCase() + "_HASH");
 
         if (storedHash == null || storedHash.isBlank()) {
-            // デフォルト管理者: admin / admin (本番では必ず変更すること)
+            // デフォルト管理者: 環境変数 ALLOW_DEFAULT_ADMIN=true の場合のみ許可
             if ("admin".equals(username)) {
                 String defaultHash = flagService.get("USER_ADMIN_HASH");
                 if (defaultHash == null || defaultHash.isBlank()) {
-                    // 初回起動時はデフォルトパスワードを許可
+                    if (!allowDefaultAdmin) {
+                        log.warn("デフォルト管理者ログインが無効です。ALLOW_DEFAULT_ADMIN=true で有効化してください。");
+                        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(Map.of("error", "default admin login is disabled"));
+                    }
                     if ("admin".equals(request.password)) {
+                        log.warn("⚠️ デフォルト管理者パスワードでログインしました。速やかにパスワードを変更してください。");
                         String token = jwtTokenService.generateToken(username);
                         return ResponseEntity.ok(Map.of(
                                 "token", token,
@@ -117,8 +130,8 @@ public class AuthController {
         if (storedHash != null && !storedHash.isBlank()) {
             isCurrentPasswordValid = passwordEncoder.matches(request.currentPassword, storedHash);
         } else {
-            // 初回admin設定の場合はデフォルトパスワード確認
-            if ("admin".equals(username) && "admin".equals(request.currentPassword)) {
+            // 初回admin設定の場合はデフォルトパスワード確認（環境変数ガード付き）
+            if (allowDefaultAdmin && "admin".equals(username) && "admin".equals(request.currentPassword)) {
                 isCurrentPasswordValid = true;
             }
         }

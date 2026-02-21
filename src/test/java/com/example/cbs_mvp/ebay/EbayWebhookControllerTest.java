@@ -33,128 +33,132 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 class EbayWebhookControllerTest {
 
-    private MockMvc mvc;
+        private MockMvc mvc;
 
-    @Mock
-    private EbayOrderClient ebayOrderClient;
+        @Mock
+        private EbayOrderClient ebayOrderClient;
 
-    @Mock
-    private OrderRepository orderRepository;
+        @Mock
+        private OrderRepository orderRepository;
 
-    @Mock
-    private EbayDraftRepository draftRepository;
+        @Mock
+        private EbayDraftRepository draftRepository;
 
-    @Mock
-    private OrderImportService orderImportService;
+        @Mock
+        private OrderImportService orderImportService;
 
-    @Mock
-    private FxRateService fxRateService;
+        @Mock
+        private FxRateService fxRateService;
 
-    @InjectMocks
-    private EbayWebhookController controller;
+        @Mock
+        private WebhookSignatureVerifier signatureVerifier;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+        @InjectMocks
+        private EbayWebhookController controller;
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
-        mvc = MockMvcBuilders.standaloneSetup(controller).build();
-    }
+        private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Test
-    void receiveWebhook_shouldImportOrder() throws Exception {
-        String orderId = "11-222-333";
-        String sku = "TEST-SKU-001";
-        Long draftId = 100L;
-        BigDecimal soldPrice = new BigDecimal("50.00");
-        BigDecimal fxRate = new BigDecimal("150.00");
+        @BeforeEach
+        void setup() {
+                MockitoAnnotations.openMocks(this);
+                mvc = MockMvcBuilders.standaloneSetup(controller).build();
+        }
 
-        // Mock: Order not exists
-        when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
+        @Test
+        void receiveWebhook_shouldImportOrder() throws Exception {
+                String orderId = "11-222-333";
+                String sku = "TEST-SKU-001";
+                Long draftId = 100L;
+                BigDecimal soldPrice = new BigDecimal("50.00");
+                BigDecimal fxRate = new BigDecimal("150.00");
 
-        // Mock: Order details
-        Map<String, Object> orderDetails = Map.of(
-                "orderId", orderId,
-                "lineItems", List.of(Map.of("sku", sku)),
-                "pricingSummary", Map.of("total", Map.of("value", soldPrice.toString())));
-        when(ebayOrderClient.getOrder(orderId)).thenReturn(orderDetails);
+                // Mock: Order not exists
+                when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
 
-        // Mock: Draft exists
-        EbayDraft draft = new EbayDraft();
-        draft.setDraftId(draftId);
-        draft.setSku(sku);
-        when(draftRepository.findBySku(sku)).thenReturn(Optional.of(draft));
+                // Mock: Order details
+                Map<String, Object> orderDetails = Map.of(
+                                "orderId", orderId,
+                                "lineItems", List.of(Map.of("sku", sku)),
+                                "pricingSummary", Map.of("total", Map.of("value", soldPrice.toString())));
+                when(ebayOrderClient.getOrder(orderId)).thenReturn(orderDetails);
 
-        // Mock: FxRate
-        when(fxRateService.getCurrentRate()).thenReturn(new FxRateService.FxRateResult(fxRate, Instant.now(), null));
+                // Mock: Draft exists
+                EbayDraft draft = new EbayDraft();
+                draft.setDraftId(draftId);
+                draft.setSku(sku);
+                when(draftRepository.findBySku(sku)).thenReturn(Optional.of(draft));
 
-        // Payload
-        Map<String, Object> payload = Map.of(
-                "notification", Map.of(
-                        "data", Map.of("orderId", orderId)));
+                // Mock: FxRate
+                when(fxRateService.getCurrentRate())
+                                .thenReturn(new FxRateService.FxRateResult(fxRate, Instant.now(), null));
 
-        mvc.perform(post("/ebay/webhook")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk());
+                // Payload
+                Map<String, Object> payload = Map.of(
+                                "notification", Map.of(
+                                                "data", Map.of("orderId", orderId)));
 
-        verify(orderImportService).importSold(any(SoldImportCommand.class));
-    }
+                mvc.perform(post("/ebay/webhook")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(payload)))
+                                .andExpect(status().isOk());
 
-    @Test
-    void receiveWebhook_shouldSkip_ifAlreadyExists() throws Exception {
-        String orderId = "11-222-333";
+                verify(orderImportService).importSold(any(SoldImportCommand.class));
+        }
 
-        // Mock: Order exists
-        when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.of(new Order()));
+        @Test
+        void receiveWebhook_shouldSkip_ifAlreadyExists() throws Exception {
+                String orderId = "11-222-333";
 
-        // Payload
-        Map<String, Object> payload = Map.of("orderId", orderId);
+                // Mock: Order exists
+                when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.of(new Order()));
 
-        mvc.perform(post("/ebay/webhook")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk());
+                // Payload
+                Map<String, Object> payload = Map.of("orderId", orderId);
 
-        verify(ebayOrderClient, never()).getOrder(any());
-        verify(orderImportService, never()).importSold(any());
-    }
+                mvc.perform(post("/ebay/webhook")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(payload)))
+                                .andExpect(status().isOk());
 
-    @Test
-    void receiveWebhook_shouldSkip_ifDraftNotFound() throws Exception {
-        String orderId = "11-222-333";
-        String sku = "UNKNOWN-SKU";
+                verify(ebayOrderClient, never()).getOrder(any());
+                verify(orderImportService, never()).importSold(any());
+        }
 
-        when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
+        @Test
+        void receiveWebhook_shouldSkip_ifDraftNotFound() throws Exception {
+                String orderId = "11-222-333";
+                String sku = "UNKNOWN-SKU";
 
-        Map<String, Object> orderDetails = Map.of(
-                "orderId", orderId,
-                "lineItems", List.of(Map.of("sku", sku)));
-        when(ebayOrderClient.getOrder(orderId)).thenReturn(orderDetails);
-        when(draftRepository.findBySku(sku)).thenReturn(Optional.empty());
+                when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
 
-        Map<String, Object> payload = Map.of("orderId", orderId);
+                Map<String, Object> orderDetails = Map.of(
+                                "orderId", orderId,
+                                "lineItems", List.of(Map.of("sku", sku)));
+                when(ebayOrderClient.getOrder(orderId)).thenReturn(orderDetails);
+                when(draftRepository.findBySku(sku)).thenReturn(Optional.empty());
 
-        mvc.perform(post("/ebay/webhook")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk()); // Returns 200 but logs error
+                Map<String, Object> payload = Map.of("orderId", orderId);
 
-        verify(orderImportService, never()).importSold(any());
-    }
+                mvc.perform(post("/ebay/webhook")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(payload)))
+                                .andExpect(status().isOk()); // Returns 200 but logs error
 
-    @Test
-    void receiveWebhook_shouldReturn500_onApiError() throws Exception {
-        String orderId = "11-222-333";
+                verify(orderImportService, never()).importSold(any());
+        }
 
-        when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
-        when(ebayOrderClient.getOrder(orderId)).thenThrow(new RuntimeException("API Error"));
+        @Test
+        void receiveWebhook_shouldReturn500_onApiError() throws Exception {
+                String orderId = "11-222-333";
 
-        Map<String, Object> payload = Map.of("orderId", orderId);
+                when(orderRepository.findByEbayOrderKey(orderId)).thenReturn(Optional.empty());
+                when(ebayOrderClient.getOrder(orderId)).thenThrow(new RuntimeException("API Error"));
 
-        mvc.perform(post("/ebay/webhook")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isInternalServerError());
-    }
+                Map<String, Object> payload = Map.of("orderId", orderId);
+
+                mvc.perform(post("/ebay/webhook")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(payload)))
+                                .andExpect(status().isInternalServerError());
+        }
 }

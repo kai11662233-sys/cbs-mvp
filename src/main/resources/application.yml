@@ -1,14 +1,11 @@
 server:
   port: 8080
-  error:
-    include-stacktrace: always
-    include-message: always
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/cbs_mvp
-    username: cbs
-    password: cbs
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cbs_mvp}
+    username: ${DB_USER:cbs}
+    password: ${DB_PASS:cbs}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -22,18 +19,15 @@ spring:
       encoding: UTF-8
 
   profiles:
-    active: stub  # 本番eBay連携時は real に変更
+    active: ${SPRING_PROFILES_ACTIVE:stub}
 
 logging:
   level:
     root: INFO
-    org.springframework.web: DEBUG
-    org.springframework.web.servlet.DispatcherServlet: TRACE
-    org.springframework.security: DEBUG
     org.springframework.scheduling: INFO
-    com.example.cbs_mvp: DEBUG
+    com.example.cbs_mvp: INFO
 
-# eBay OAuth設定（環境変数で上書き可能）
+# eBay OAuth設定（環境変数で上書き）
 ebay:
   client-id: ${EBAY_CLIENT_ID:}
   client-secret: ${EBAY_CLIENT_SECRET:}
@@ -50,3 +44,7 @@ fx:
   api-key: ${FX_API_KEY:}
   base-currency: USD
   target-currency: JPY
+
+# CBS固有設定
+cbs:
+  allow-default-admin: ${ALLOW_DEFAULT_ADMIN:false}

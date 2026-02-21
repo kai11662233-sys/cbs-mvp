@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,33 +33,65 @@ public class EbayWebhookController {
     private final EbayDraftRepository draftRepository;
     private final OrderImportService orderImportService;
     private final FxRateService fxRateService;
+    private final WebhookSignatureVerifier signatureVerifier;
+
+    @Value("${EBAY_WEBHOOK_SECRET:}")
+    private String webhookSecret;
+
+    @Value("${spring.profiles.active:stub}")
+    private String activeProfile;
 
     public EbayWebhookController(
             EbayOrderClient ebayOrderClient,
             OrderRepository orderRepository,
             EbayDraftRepository draftRepository,
             OrderImportService orderImportService,
-            FxRateService fxRateService) {
+            FxRateService fxRateService,
+            WebhookSignatureVerifier signatureVerifier) {
         this.ebayOrderClient = ebayOrderClient;
         this.orderRepository = orderRepository;
         this.draftRepository = draftRepository;
         this.orderImportService = orderImportService;
         this.fxRateService = fxRateService;
+        this.signatureVerifier = signatureVerifier;
     }
 
     @PostMapping
     public ResponseEntity<?> receiveWebhook(
             @RequestHeader(value = "X-Ebay-Signature", required = false) String signature,
-            @RequestBody Map<String, Object> payload) {
-        // 1. 署名検証 (TODO: Implement HMAC verification)
-        if (signature == null) {
-            // MVP: 本番運用前には必須だが、テスト・デバッグ用にログ出力のみとする場合もある
-            // ここでは要件通り401を返すか、Devモードなら通すか。
-            // ユーザー要件B: 署名不正は401
-            // log.warn("Missing X-Ebay-Signature");
-            // return ResponseEntity.status(401).build();
-            // ※今すぐ検証ロジックがないので、一旦パスさせる（開発中）
-            // log.info("TODO: Verify signature: {}", signature);
+            @RequestBody String rawBody) {
+
+        // 1. 署名検証
+        boolean isSecretConfigured = webhookSecret != null && !webhookSecret.isBlank();
+        boolean isProd = "real".equalsIgnoreCase(activeProfile) || "prod".equalsIgnoreCase(activeProfile);
+
+        if (!isSecretConfigured) {
+            if (isProd) {
+                log.error("EBAY_WEBHOOK_SECRET が未設定です。本番環境ではWebhookを処理できません。");
+                return ResponseEntity.status(503).body("webhook secret not configured");
+            }
+            log.warn("⚠️ EBAY_WEBHOOK_SECRET 未設定。署名検証をスキップします（開発モード）。");
+        } else {
+            if (signature == null || signature.isBlank()) {
+                log.warn("Webhook署名ヘッダーがありません。リクエストを拒否します。");
+                return ResponseEntity.status(401).body("missing signature");
+            }
+            if (!signatureVerifier.verify(rawBody, signature, webhookSecret)) {
+                log.warn("Webhook署名が不正です。リクエストを拒否します。");
+                return ResponseEntity.status(401).body("invalid signature");
+            }
+            log.debug("Webhook署名検証OK");
+        }
+
+        // パース
+        Map<String, Object> payload;
+        try {
+            payload = new com.fasterxml.jackson.databind.ObjectMapper().readValue(
+                    rawBody, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                    });
+        } catch (Exception e) {
+            log.error("Webhook payload のパースに失敗しました", e);
+            return ResponseEntity.badRequest().body("invalid JSON");
         }
 
         // 2. PayloadからorderId抽出

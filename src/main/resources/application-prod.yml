@@ -1,0 +1,32 @@
+# ========================================
+# 本番環境用プロファイル (prod / real)
+# ========================================
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+
+logging:
+  level:
+    root: WARN
+    org.springframework.web: WARN
+    org.springframework.security: WARN
+    com.example.cbs_mvp: INFO
+
+# 本番: JWT秘密鍵は環境変数必須（デフォルト値なし）
+jwt:
+  secret: ${JWT_SECRET}
+
+ebay:
+  sandbox: false
+
+# 本番: デフォルト管理者ログイン禁止（明示）
+cbs:
+  allow-default-admin: false

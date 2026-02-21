@@ -7,6 +7,9 @@ import com.example.cbs_mvp.repo.StateTransitionRepository;
 import com.example.cbs_mvp.service.StateTransitionService;
 import com.example.cbs_mvp.entity.StateTransition;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +26,8 @@ import java.util.UUID;
 @RequestMapping("/ops")
 public class OpsController {
 
+    private static final Logger log = LoggerFactory.getLogger(OpsController.class);
+
     private final OpsKeyService opsKeyService;
     private final KillSwitchService killSwitchService;
     private final SystemFlagService flags;
@@ -33,6 +38,9 @@ public class OpsController {
     private final StateTransitionRepository transitionRepo;
     private final com.example.cbs_mvp.repo.CandidateRepository candidateRepo;
     private final com.example.cbs_mvp.repo.PricingResultRepository pricingResultRepo;
+
+    @Value("${OPS_DEFAULT_KEY:}")
+    private String opsDefaultKey;
 
     public OpsController(
             OpsKeyService opsKeyService,
@@ -59,7 +67,12 @@ public class OpsController {
 
     @PostConstruct
     void initOpsKey() {
-        opsKeyService.ensureDefaultOpsKeyIfMissing("dev-ops-key");
+        if (opsDefaultKey != null && !opsDefaultKey.isBlank()) {
+            log.warn("⚠️ OPS_DEFAULT_KEY が設定されています。デフォルトOPSキーを投入します。本番環境では使用しないでください。");
+            opsKeyService.ensureDefaultOpsKeyIfMissing(opsDefaultKey);
+        } else {
+            log.info("OPS_DEFAULT_KEY 未設定。デフォルトOPSキーは投入されません。");
+        }
     }
 
     @GetMapping("/status")
