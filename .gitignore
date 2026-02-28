@@ -42,3 +42,7 @@ out/
 # Local logs
 boot_debug.log
 boot.err
+
+# Production Secrets
+application-secrets.yml
+
