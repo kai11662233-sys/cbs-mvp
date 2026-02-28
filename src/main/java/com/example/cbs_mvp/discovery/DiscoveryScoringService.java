@@ -13,26 +13,62 @@ import org.springframework.stereotype.Service;
 
 /**
  * Discoveryアイテムのスコア計算サービス
+ *
+ * === 変更履歴 ===
+ * v2: 既存ペナルティ厳格化 + 重量/タイトル品質/ブランドリスク/価格帯の4項目追加
  */
 @Service
 public class DiscoveryScoringService {
 
-    // ===== スコア減点・加点値 =====
-    private static final int PENALTY_USED_CONDITION = -20;
-    private static final int PENALTY_UNKNOWN_CONDITION = -10;
-    private static final int PENALTY_C2C_SOURCE = -25;
+    // ===== スコア減点・加点値（v2: 厳格化） =====
+    private static final int PENALTY_USED_CONDITION = -30; // v1: -20
+    private static final int PENALTY_UNKNOWN_CONDITION = -20; // v1: -10
+    private static final int PENALTY_C2C_SOURCE = -35; // v1: -25
     private static final int PENALTY_RESTRICTED_CATEGORY = -40;
-    private static final int PENALTY_HIGH_VOLATILITY = -20;
-    private static final int PENALTY_VOLATILITY = -10;
+    private static final int PENALTY_HIGH_VOLATILITY = -30; // v1: -20
+    private static final int PENALTY_VOLATILITY = -15; // v1: -10
     private static final int BONUS_TRUSTED_SOURCE = 10;
+
+    // ===== 新規: 重量ペナルティ =====
+    private static final int PENALTY_HEAVY_ITEM = -25; // 5kg超
+    private static final int PENALTY_MEDIUM_WEIGHT = -10; // 3kg超
+    private static final BigDecimal WEIGHT_HEAVY_KG = new BigDecimal("5.0");
+    private static final BigDecimal WEIGHT_MEDIUM_KG = new BigDecimal("3.0");
+
+    // ===== 新規: タイトル品質ペナルティ =====
+    private static final int PENALTY_TITLE_TOO_SHORT = -15; // 10文字未満
+    private static final int PENALTY_TITLE_TOO_LONG = -10; // 200文字超
+    private static final int TITLE_MIN_LENGTH = 10;
+    private static final int TITLE_MAX_LENGTH = 200;
+
+    // ===== 新規: ブランドリスク（VeRO対象ブランド） =====
+    private static final int PENALTY_VERO_BRAND = -35;
+    private static final Set<String> VERO_RISK_BRANDS = Set.of(
+            // 主要VeRO登録ブランド（eBayで出品制限リスクが高い）
+            "nike", "adidas", "puma", "new balance", "converse",
+            "gucci", "louis vuitton", "chanel", "hermes", "prada",
+            "rolex", "omega", "cartier", "breitling",
+            "disney", "sanrio", "pokemon", "nintendo", "sony",
+            "apple", "dyson", "bose",
+            "supreme", "off-white", "balenciaga",
+            "ナイキ", "アディダス", "プーマ", "ニューバランス", "コンバース",
+            "グッチ", "ルイヴィトン", "シャネル", "エルメス", "プラダ",
+            "ロレックス", "オメガ", "カルティエ",
+            "ディズニー", "サンリオ", "ポケモン", "任天堂", "ソニー",
+            "アップル", "ダイソン", "ボーズ");
+
+    // ===== 新規: 価格帯スイートスポット =====
+    private static final int PENALTY_PRICE_OUT_OF_SWEET = -10;
+    private static final BigDecimal SWEET_MIN_YEN = new BigDecimal("3000");
+    private static final BigDecimal SWEET_MAX_YEN = new BigDecimal("10000");
 
     // ===== 閾値 =====
     private static final double VOLATILITY_THRESHOLD_HIGH = 10.0;
     private static final double VOLATILITY_THRESHOLD_LOW = 5.0;
 
-    // ===== Overall重み付け =====
-    private static final double WEIGHT_PROFIT = 0.55;
-    private static final double WEIGHT_SAFETY = 0.35;
+    // ===== Overall重み付け（v2: 利益重視） =====
+    private static final double WEIGHT_PROFIT = 0.60; // v1: 0.55
+    private static final double WEIGHT_SAFETY = 0.30; // v1: 0.35
     private static final double WEIGHT_FRESHNESS = 0.10;
 
     // ===== Freshness時間閾値（時間） =====
@@ -48,7 +84,7 @@ public class DiscoveryScoringService {
 
     /**
      * SafetyScore計算（100から減点方式）
-     * 
+     *
      * @return SafetyResult（score, breakdown, riskFlags）
      */
     public SafetyResult calculateSafety(DiscoveryItem item, BigDecimal previousPriceYen) {
@@ -112,6 +148,68 @@ public class DiscoveryScoringService {
             }
         }
 
+        // 5. [NEW] 重量ペナルティ（国際送料への影響）
+        BigDecimal weight = item.getWeightKg();
+        if (weight != null) {
+            if (weight.compareTo(WEIGHT_HEAVY_KG) > 0) {
+                score += PENALTY_HEAVY_ITEM;
+                breakdown.add(breakdownEntry("HEAVY_ITEM", PENALTY_HEAVY_ITEM,
+                        String.format("重量 %.1fkg (5kg超: 国際送料高額)", weight.doubleValue())));
+                riskFlags.add("HEAVY_ITEM");
+            } else if (weight.compareTo(WEIGHT_MEDIUM_KG) > 0) {
+                score += PENALTY_MEDIUM_WEIGHT;
+                breakdown.add(breakdownEntry("MEDIUM_WEIGHT", PENALTY_MEDIUM_WEIGHT,
+                        String.format("重量 %.1fkg (3kg超: 送料注意)", weight.doubleValue())));
+                riskFlags.add("MEDIUM_WEIGHT");
+            }
+        }
+
+        // 6. [NEW] タイトル品質チェック
+        String title = item.getTitle();
+        if (title != null) {
+            int titleLen = title.length();
+            if (titleLen < TITLE_MIN_LENGTH) {
+                score += PENALTY_TITLE_TOO_SHORT;
+                breakdown.add(breakdownEntry("TITLE_TOO_SHORT", PENALTY_TITLE_TOO_SHORT,
+                        String.format("タイトル短すぎ (%d文字 < %d文字)", titleLen, TITLE_MIN_LENGTH)));
+                riskFlags.add("TITLE_TOO_SHORT");
+            } else if (titleLen > TITLE_MAX_LENGTH) {
+                score += PENALTY_TITLE_TOO_LONG;
+                breakdown.add(breakdownEntry("TITLE_TOO_LONG", PENALTY_TITLE_TOO_LONG,
+                        String.format("タイトル長すぎ (%d文字 > %d文字)", titleLen, TITLE_MAX_LENGTH)));
+                riskFlags.add("TITLE_TOO_LONG");
+            }
+        } else {
+            score += PENALTY_TITLE_TOO_SHORT;
+            breakdown.add(breakdownEntry("TITLE_MISSING", PENALTY_TITLE_TOO_SHORT, "タイトル未設定"));
+            riskFlags.add("TITLE_MISSING");
+        }
+
+        // 7. [NEW] ブランドリスク（VeRO対象ブランド検出）
+        if (title != null && !title.isBlank()) {
+            String lowerTitle = title.toLowerCase();
+            for (String brand : VERO_RISK_BRANDS) {
+                if (lowerTitle.contains(brand)) {
+                    score += PENALTY_VERO_BRAND;
+                    breakdown.add(breakdownEntry("VERO_BRAND_RISK", PENALTY_VERO_BRAND,
+                            "VeRO対象ブランド検出: " + brand));
+                    riskFlags.add("VERO_BRAND:" + brand);
+                    break; // 1ブランドのみカウント
+                }
+            }
+        }
+
+        // 8. [NEW] 価格帯スイートスポット判定
+        BigDecimal price = item.getPriceYen();
+        if (price != null) {
+            if (price.compareTo(SWEET_MIN_YEN) < 0 || price.compareTo(SWEET_MAX_YEN) > 0) {
+                score += PENALTY_PRICE_OUT_OF_SWEET;
+                breakdown.add(breakdownEntry("PRICE_OUT_OF_SWEET_SPOT", PENALTY_PRICE_OUT_OF_SWEET,
+                        String.format("価格帯 ¥%s (推奨: ¥%s〜¥%s)", price, SWEET_MIN_YEN, SWEET_MAX_YEN)));
+                riskFlags.add("PRICE_OUT_OF_SWEET_SPOT");
+            }
+        }
+
         // スコアを0-100にクランプ
         score = Math.max(0, Math.min(100, score));
 
@@ -141,8 +239,10 @@ public class DiscoveryScoringService {
     }
 
     /**
-     * ProfitScore計算
+     * ProfitScore計算（v2: 基準引き上げ）
      * PricingResultから算出。Gate FAILは0。
+     *
+     * v2: 25%=50点、50%=100点（v1: 20%=50点、40%=100点）
      */
     public int calculateProfit(BigDecimal profitRate, boolean gateProfitOk, boolean gateCashOk) {
         if (!gateProfitOk || !gateCashOk) {
@@ -152,26 +252,24 @@ public class DiscoveryScoringService {
             return 0;
         }
 
-        // 利益率をスコアに変換（20%=50点、40%=100点として線形補間）
         double rate = profitRate.doubleValue();
         if (rate <= 0)
             return 0;
-        if (rate >= 0.40)
+        if (rate >= 0.50)
             return 100;
 
-        // 0.20 -> 50, 0.40 -> 100 の線形補間
-        // score = (rate - 0.20) / 0.20 * 50 + 50 when rate >= 0.20
-        // score = rate / 0.20 * 50 when rate < 0.20
-        if (rate >= 0.20) {
-            return (int) Math.round((rate - 0.20) / 0.20 * 50 + 50);
+        // 0.25 -> 50, 0.50 -> 100 の線形補間
+        if (rate >= 0.25) {
+            return (int) Math.round((rate - 0.25) / 0.25 * 50 + 50);
         } else {
-            return (int) Math.round(rate / 0.20 * 50);
+            // 0 -> 0, 0.25 -> 50 の線形補間
+            return (int) Math.round(rate / 0.25 * 50);
         }
     }
 
     /**
      * OverallScore計算
-     * profit 0.55 + safety 0.35 + freshness 0.10
+     * profit 0.60 + safety 0.30 + freshness 0.10
      */
     public int calculateOverall(int profitScore, int safetyScore, int freshnessScore) {
         double overall = profitScore * WEIGHT_PROFIT + safetyScore * WEIGHT_SAFETY + freshnessScore * WEIGHT_FRESHNESS;
