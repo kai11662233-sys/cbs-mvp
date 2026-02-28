@@ -31,7 +31,7 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/*.html", "/*.css", "/*.js", "/*.png", "/*.ico").permitAll()
                         .requestMatchers("/health", "/health/**").permitAll()
-                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/login", "/auth/change-password").permitAll()
                         .requestMatchers("/ops/status").permitAll()
                         .requestMatchers("/ebay/webhook").permitAll() // 署名検証はController内で実施
 
