@@ -1,0 +1,7 @@
+{
+  "timestamp": 1772268917746,
+  "status": 403,
+  "error": "Forbidden",
+  "message": "Access Denied",
+  "path": "/discovery/auto-recommend"
+}

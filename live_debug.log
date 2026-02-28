@@ -1,0 +1,68 @@
+Starting a Gradle Daemon, 24 busy and 2 incompatible Daemons could not be reused, use --status for details
+
+> Task :compileJava
+ノート: C:\Users\topok\cbs-mvp\src\main\java\com\example\cbs_mvp\discovery\RakutenItemSearchService.javaは推奨されないAPIを使用またはオーバーライドしています。
+ノート: 詳細は、-Xlint:deprecationオプションを指定して再コンパイルしてください。
+
+> Task :processResources UP-TO-DATE
+> Task :classes
+> Task :resolveMainClassName
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.1)
+
+2026-02-23T21:11:29.259+09:00  INFO 26356 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Starting CbsMvpApplication using Java 21.0.10 with PID 26356 (C:\Users\topok\cbs-mvp\build\classes\java\main started by topok in C:\Users\topok\cbs-mvp)
+2026-02-23T21:11:29.261+09:00  INFO 26356 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : The following 1 profile is active: "prod"
+2026-02-23T21:11:30.637+09:00  INFO 26356 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : JWT service initialized. Token expiration: 24 hours
+2026-02-23T21:11:33.210+09:00  WARN 26356 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ======================================
+2026-02-23T21:11:33.210+09:00  WARN 26356 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ⚠️ WARNING: ebay.fulfillment-policy-id not configured!
+2026-02-23T21:11:33.210+09:00  WARN 26356 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : Using ruName as fallback (will fail in production).
+2026-02-23T21:11:33.210+09:00  WARN 26356 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : Set proper policy IDs in application.yml
+2026-02-23T21:11:33.210+09:00  WARN 26356 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ======================================
+2026-02-23T21:11:33.379+09:00  INFO 26356 --- [cbs-mvp] [           main] com.example.cbs_mvp.ops.OpsController    : OPS_DEFAULT_KEY 未設定。デフォルトOPSキーは投入されません。
+2026-02-23T21:11:33.424+09:00  WARN 26356 --- [cbs-mvp] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-23T21:11:33.436+09:00  WARN 26356 --- [cbs-mvp] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 86b4762b-ec0a-423b-b287-754484912ba6
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-02-23T21:11:33.845+09:00  INFO 26356 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Started CbsMvpApplication in 4.952 seconds (process running for 5.239)
+2026-02-23T21:11:33.959+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:11:43.851+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:11:53.852+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:03.856+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:13.854+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:14.710+09:00  WARN 26356 --- [cbs-mvp] [nio-8080-exec-4] c.e.cbs_mvp.security.AuthController      : ⚠️ デフォルト管理者パスワードでログインしました。速やかにパスワードを変更してください。
+2026-02-23T21:12:14.982+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:14.982+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=558885 found=0
+2026-02-23T21:12:16.206+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:16.206+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=562637 found=0
+2026-02-23T21:12:17.433+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:17.433+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=101164 found=0
+2026-02-23T21:12:18.654+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:18.654+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=212514 found=0
+2026-02-23T21:12:19.884+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:19.884+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=510915 found=0
+2026-02-23T21:12:21.108+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:21.108+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=101070 found=0
+2026-02-23T21:12:22.332+09:00 ERROR 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] fetch error: 403 Error on GET request for "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20220601": "{<EOL>  "errors": {<EOL>    "errorCode": 403,<EOL>    "errorMessage": "REQUEST_CONTEXT_BODY_HTTP_REFERRER_MISSING"<EOL>  }<EOL>}"
+2026-02-23T21:12:22.332+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.RakutenItemSearchService         : [Rakuten] genreId=100227 found=0
+2026-02-23T21:12:23.540+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.AutoRecommendationService        : [AutoRecommend] RAKUTEN returned 0 items
+2026-02-23T21:12:23.540+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.AutoRecommendationService        : [AutoRecommend] YAHOO returned 0 items
+2026-02-23T21:12:23.540+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.AutoRecommendationService        : [AutoRecommend] Total candidates fetched: 0
+2026-02-23T21:12:23.540+09:00  INFO 26356 --- [cbs-mvp] [nio-8080-exec-6] c.e.c.d.AutoRecommendationService        : [AutoRecommend] Done: fetched=0, inserted=0, updated=0, skipped=0
+2026-02-23T21:12:23.853+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:33.855+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:43.851+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:12:53.856+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:13:03.861+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0
+2026-02-23T21:13:13.857+09:00  INFO 26356 --- [cbs-mvp] [   scheduling-1] com.example.cbs_mvp.batch.NightlyBatch   : [NightlyBatch] drafts created: 0

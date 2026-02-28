@@ -1,0 +1,110 @@
+Starting a Gradle Daemon, 6 busy and 2 incompatible and 3 stopped Daemons could not be reused, use --status for details
+> Task :compileJava UP-TO-DATE
+> Task :processResources UP-TO-DATE
+> Task :classes UP-TO-DATE
+> Task :resolveMainClassName UP-TO-DATE
+
+> Task :bootRun
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.4.1)
+
+2026-02-23T16:37:57.136+09:00  INFO 7884 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Starting CbsMvpApplication using Java 21.0.10 with PID 7884 (C:\Users\topok\cbs-mvp\build\classes\java\main started by topok in C:\Users\topok\cbs-mvp)
+2026-02-23T16:37:57.138+09:00 DEBUG 7884 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : Running with Spring Boot v3.4.1, Spring v6.2.1
+2026-02-23T16:37:57.138+09:00  INFO 7884 --- [cbs-mvp] [           main] com.example.cbs_mvp.CbsMvpApplication    : The following 1 profile is active: "dev"
+2026-02-23T16:37:57.691+09:00  INFO 7884 --- [cbs-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-02-23T16:37:57.824+09:00  INFO 7884 --- [cbs-mvp] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 128 ms. Found 13 JPA repository interfaces.
+2026-02-23T16:37:58.293+09:00  INFO 7884 --- [cbs-mvp] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-02-23T16:37:58.303+09:00  INFO 7884 --- [cbs-mvp] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-02-23T16:37:58.303+09:00  INFO 7884 --- [cbs-mvp] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.34]
+2026-02-23T16:37:58.348+09:00  INFO 7884 --- [cbs-mvp] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-02-23T16:37:58.348+09:00  INFO 7884 --- [cbs-mvp] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1180 ms
+2026-02-23T16:37:58.359+09:00  WARN 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : ======================================
+2026-02-23T16:37:58.359+09:00  WARN 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : ⚠️ WARNING: Using default JWT secret!
+2026-02-23T16:37:58.359+09:00  WARN 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : This is INSECURE for production use.
+2026-02-23T16:37:58.359+09:00  WARN 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : Set JWT_SECRET environment variable.
+2026-02-23T16:37:58.359+09:00  WARN 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : ======================================
+2026-02-23T16:37:58.362+09:00  INFO 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtTokenService     : JWT service initialized. Token expiration: 24 hours
+2026-02-23T16:37:58.395+09:00 DEBUG 7884 --- [cbs-mvp] [           main] c.e.cbs_mvp.security.JwtAuthFilter       : Filter 'jwtAuthFilter' configured for use
+2026-02-23T16:37:58.436+09:00  INFO 7884 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-02-23T16:37:58.522+09:00  INFO 7884 --- [cbs-mvp] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection org.postgresql.jdbc.PgConnection@1578fa9
+2026-02-23T16:37:58.523+09:00  INFO 7884 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-02-23T16:37:58.597+09:00  INFO 7884 --- [cbs-mvp] [           main] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-02-23T16:37:58.635+09:00  INFO 7884 --- [cbs-mvp] [           main] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.6.4.Final
+2026-02-23T16:37:58.658+09:00  INFO 7884 --- [cbs-mvp] [           main] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-02-23T16:37:58.855+09:00  INFO 7884 --- [cbs-mvp] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-02-23T16:37:58.924+09:00  INFO 7884 --- [cbs-mvp] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [Connecting through datasource 'HikariDataSource (HikariPool-1)']
+	Database driver: undefined/unknown
+	Database version: 16.12
+	Autocommit mode: undefined/unknown
+	Isolation level: undefined/unknown
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-02-23T16:37:59.687+09:00  INFO 7884 --- [cbs-mvp] [           main] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-02-23T16:37:59.689+09:00  INFO 7884 --- [cbs-mvp] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-02-23T16:37:59.877+09:00  INFO 7884 --- [cbs-mvp] [           main] o.s.d.j.r.query.QueryEnhancerFactory     : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-02-23T16:38:00.760+09:00  WARN 7884 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ======================================
+2026-02-23T16:38:00.760+09:00  WARN 7884 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ⚠️ WARNING: ebay.fulfillment-policy-id not configured!
+2026-02-23T16:38:00.760+09:00  WARN 7884 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : Using ruName as fallback (will fail in production).
+2026-02-23T16:38:00.760+09:00  WARN 7884 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : Set proper policy IDs in application.yml
+2026-02-23T16:38:00.760+09:00  WARN 7884 --- [cbs-mvp] [           main] c.example.cbs_mvp.ebay.EbayOAuthConfig   : ======================================
+2026-02-23T16:38:00.927+09:00  INFO 7884 --- [cbs-mvp] [           main] com.example.cbs_mvp.ops.OpsController    : OPS_DEFAULT_KEY 未設定。デフォルトOPSキーは投入されません。
+2026-02-23T16:38:00.970+09:00  WARN 7884 --- [cbs-mvp] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-02-23T16:38:00.982+09:00  WARN 7884 --- [cbs-mvp] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: fa968577-be46-4da5-839f-39adc4e18f27
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-02-23T16:38:00.986+09:00  INFO 7884 --- [cbs-mvp] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-02-23T16:38:01.035+09:00  INFO 7884 --- [cbs-mvp] [           main] o.s.b.a.w.s.WelcomePageHandlerMapping    : Adding welcome page: class path resource [static/index.html]
+2026-02-23T16:38:01.083+09:00 DEBUG 7884 --- [cbs-mvp] [           main] s.w.s.m.m.a.RequestMappingHandlerMapping : 49 mappings in 'requestMappingHandlerMapping'
+2026-02-23T16:38:01.106+09:00 DEBUG 7884 --- [cbs-mvp] [           main] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2026-02-23T16:38:01.142+09:00 DEBUG 7884 --- [cbs-mvp] [           main] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, LogoutFilter, JwtAuthFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-02-23T16:38:01.217+09:00 DEBUG 7884 --- [cbs-mvp] [           main] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 1 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-02-23T16:38:01.249+09:00 DEBUG 7884 --- [cbs-mvp] [           main] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 1 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-02-23T16:38:01.356+09:00  WARN 7884 --- [cbs-mvp] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-02-23T16:38:01.359+09:00  INFO 7884 --- [cbs-mvp] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-02-23T16:38:01.360+09:00  INFO 7884 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-02-23T16:38:01.362+09:00  INFO 7884 --- [cbs-mvp] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-02-23T16:38:01.370+09:00  INFO 7884 --- [cbs-mvp] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-02-23T16:38:01.382+09:00 ERROR 7884 --- [cbs-mvp] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+
+> Task :bootRun FAILED
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':bootRun'.
+> Process 'command 'C:\Program Files\Microsoft\jdk-21.0.10.7-hotspot\bin\java.exe'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 10s
+4 actionable tasks: 1 executed, 3 up-to-date

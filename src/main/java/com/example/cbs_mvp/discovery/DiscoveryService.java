@@ -31,12 +31,14 @@ public class DiscoveryService {
     private final DiscoveryItemRepository repository;
     private final DiscoveryScoringService scoringService;
     private final StateTransitionService transitions;
+    private final DiscoveryIngestService ingestService;
 
     public DiscoveryService(DiscoveryItemRepository repository, DiscoveryScoringService scoringService,
-            StateTransitionService transitions) {
+            StateTransitionService transitions, DiscoveryIngestService ingestService) {
         this.repository = repository;
         this.scoringService = scoringService;
         this.transitions = transitions;
+        this.ingestService = ingestService;
     }
 
     /**
@@ -136,9 +138,14 @@ public class DiscoveryService {
         // last_checked_at更新
         item.setLastCheckedAt(OffsetDateTime.now());
 
-        // スコア再計算（現時点ではPricingなしなのでprofit=0のまま）
-        // 実際のprofitScoreはDraft処理時に計算される
-        scoringService.recalculateScores(item, previousPriceYen, null, false, false);
+        // スコア再計算: Ingestと同様に現時点の価格に基づく利益見込みを算出して更新
+        DiscoveryIngestService.ProfitEstimate estimate = ingestService.calculateProfitEstimate(item);
+        scoringService.recalculateScores(
+                item,
+                previousPriceYen,
+                estimate.profitRate(),
+                estimate.gateProfitOk(),
+                true);
 
         // ステータス更新
         if (item.hasRestrictedCategory()) {

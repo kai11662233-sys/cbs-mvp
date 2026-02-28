@@ -28,11 +28,11 @@ public class AutoRecommendationService {
     // === ユーザー設定値 ===
     private static final int SOURCE_PRICE_MIN = 2000; // 仕入単価下限
     private static final int SOURCE_PRICE_MAX = 12000; // 仕入単価上限
-    private static final BigDecimal EBAY_SELL_MIN_USD = new BigDecimal("40"); // eBay売値下限
-    private static final BigDecimal EBAY_SELL_MAX_USD = new BigDecimal("150"); // eBay売値上限
-    private static final BigDecimal MIN_GROSS_PROFIT_YEN = new BigDecimal("2500"); // 最低粗利
-    private static final BigDecimal MIN_ROI = new BigDecimal("0.25"); // ROI 25%
-    private static final BigDecimal MIN_MARGIN = new BigDecimal("0.12"); // マージン 12%
+    private static final BigDecimal EBAY_SELL_MIN_USD = new BigDecimal("30"); // eBay売値下限
+    private static final BigDecimal EBAY_SELL_MAX_USD = new BigDecimal("200"); // eBay売値上限
+    private static final BigDecimal MIN_GROSS_PROFIT_YEN = new BigDecimal("1500"); // 最低粗利
+    private static final BigDecimal MIN_ROI = new BigDecimal("0.15"); // ROI 15%
+    private static final BigDecimal MIN_MARGIN = new BigDecimal("0.10"); // マージン 10%
 
     private static final BigDecimal DEFAULT_FX_RATE = new BigDecimal("150.0");
 
@@ -129,11 +129,19 @@ public class AutoRecommendationService {
 
             // 推定売価が範囲外ならスキップ
             if (recSellUsd.compareTo(EBAY_SELL_MIN_USD) < 0 || recSellUsd.compareTo(EBAY_SELL_MAX_USD) > 0) {
+                if (seed.sourceUrl() != null && seed.sourceUrl().contains("yahoo")) {
+                    log.info("[Yahoo Gate Fail] Price Out of Bounds: {} (Min:{}, Max:{}) - {}", recSellUsd,
+                            EBAY_SELL_MIN_USD, EBAY_SELL_MAX_USD, seed.sourceUrl());
+                }
                 return false;
             }
 
             // 粗利チェック
             if (profitYen.compareTo(MIN_GROSS_PROFIT_YEN) < 0) {
+                if (seed.sourceUrl() != null && seed.sourceUrl().contains("yahoo")) {
+                    log.info("[Yahoo Gate Fail] Low Gross Profit: {} Yen (Min:{}) - {}", profitYen,
+                            MIN_GROSS_PROFIT_YEN, seed.sourceUrl());
+                }
                 return false;
             }
 
@@ -141,6 +149,9 @@ public class AutoRecommendationService {
             if (totalCost.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal roi = profitYen.divide(totalCost, 6, RoundingMode.HALF_UP);
                 if (roi.compareTo(MIN_ROI) < 0) {
+                    if (seed.sourceUrl() != null && seed.sourceUrl().contains("yahoo")) {
+                        log.info("[Yahoo Gate Fail] Low ROI: {} (Min:{}) - {}", roi, MIN_ROI, seed.sourceUrl());
+                    }
                     return false;
                 }
             }
@@ -149,6 +160,10 @@ public class AutoRecommendationService {
             if (sellYen.compareTo(BigDecimal.ZERO) > 0) {
                 BigDecimal margin = profitYen.divide(sellYen, 6, RoundingMode.HALF_UP);
                 if (margin.compareTo(MIN_MARGIN) < 0) {
+                    if (seed.sourceUrl() != null && seed.sourceUrl().contains("yahoo")) {
+                        log.info("[Yahoo Gate Fail] Low Margin: {} (Min:{}) - {}", margin, MIN_MARGIN,
+                                seed.sourceUrl());
+                    }
                     return false;
                 }
             }

@@ -237,7 +237,7 @@ public class DiscoveryIngestService {
         return isNew;
     }
 
-    private ProfitEstimate calculateProfitEstimate(DiscoveryItem item) {
+    public ProfitEstimate calculateProfitEstimate(DiscoveryItem item) {
         try {
             BigDecimal fxRate = DEFAULT_FX_RATE;
             var fxResult = fxRateService.getCurrentRate();
@@ -303,6 +303,6 @@ public class DiscoveryIngestService {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    private record ProfitEstimate(BigDecimal profitRate, boolean gateProfitOk) {
+    public record ProfitEstimate(BigDecimal profitRate, boolean gateProfitOk) {
     }
 }

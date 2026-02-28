@@ -20,18 +20,16 @@ public class YahooItemSearchService implements ExternalItemSearchService {
     private static final Logger log = LoggerFactory.getLogger(YahooItemSearchService.class);
 
     /**
-     * eBay輸出で人気のある Yahoo Shopping カテゴリID
-     * 時計・カメラ・ホビー・楽器・おもちゃ・ゲーム・アンティーク
+     * eBay輸出で人気のある検索キーワード
      */
-    private static final List<String> POPULAR_CATEGORIES = List.of(
-            "2498", // 腕時計、アクセサリー
-            "2510", // カメラ、光学機器
-            "2277", // おもちゃ、ゲーム
-            "2756", // 楽器、器材
-            "26172", // コレクション
-            "2084", // スポーツ
-            "10002" // ファッション
-    );
+    private static final List<String> POPULAR_KEYWORDS = List.of(
+            "腕時計",
+            "カメラ",
+            "おもちゃ",
+            "フィギュア",
+            "ゲームソフト",
+            "釣具",
+            "スニーカー");
 
     @Value("${YAHOO_CLIENT_ID:}")
     private String clientId;
@@ -60,25 +58,25 @@ public class YahooItemSearchService implements ExternalItemSearchService {
 
         List<DiscoverySeed> allResults = new ArrayList<>();
 
-        for (String category : POPULAR_CATEGORIES) {
+        for (String keyword : POPULAR_KEYWORDS) {
             try {
                 String url = UriComponentsBuilder
                         .fromHttpUrl("https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch")
                         .queryParam("appid", clientId)
-                        .queryParam("genre_category_id", category)
+                        .queryParam("query", keyword)
                         .queryParam("price_from", minPrice)
                         .queryParam("price_to", maxPrice)
-                        .queryParam("results", 100)
+                        .queryParam("results", 50)
                         .queryParam("sort", "-score")
                         .toUriString();
 
                 List<DiscoverySeed> results = fetchItems(url);
                 allResults.addAll(results);
-                log.info("[Yahoo] category={} found={}", category, results.size());
+                log.info("[Yahoo] keyword={} found={}", keyword, results.size());
                 // Yahoo API: レートリミット対策として待機を追加
                 Thread.sleep(1000);
             } catch (Exception e) {
-                log.warn("[Yahoo] category={} error: {}", category, e.getMessage());
+                log.warn("[Yahoo] keyword={} error: {}", keyword, e.getMessage());
             }
         }
 
