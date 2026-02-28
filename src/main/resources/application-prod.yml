@@ -2,6 +2,8 @@
 # 本番環境用プロファイル (prod / real)
 # ========================================
 
+spring.config.import: optional:file:./application-secrets.yml
+
 server:
   error:
     include-stacktrace: never
