@@ -65,16 +65,18 @@ public class YahooItemSearchService implements ExternalItemSearchService {
                 String url = UriComponentsBuilder
                         .fromHttpUrl("https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch")
                         .queryParam("appid", clientId)
-                        .queryParam("category_id", category)
+                        .queryParam("genre_category_id", category)
                         .queryParam("price_from", minPrice)
                         .queryParam("price_to", maxPrice)
-                        .queryParam("results", 10)
+                        .queryParam("results", 100)
                         .queryParam("sort", "-score")
                         .toUriString();
 
                 List<DiscoverySeed> results = fetchItems(url);
                 allResults.addAll(results);
                 log.info("[Yahoo] category={} found={}", category, results.size());
+                // Yahoo API: レートリミット対策として待機を追加
+                Thread.sleep(1000);
             } catch (Exception e) {
                 log.warn("[Yahoo] category={} error: {}", category, e.getMessage());
             }
@@ -89,7 +91,8 @@ public class YahooItemSearchService implements ExternalItemSearchService {
     }
 
     private boolean isConfigured() {
-        return clientId != null && !clientId.isBlank() && !"CHANGE_ME".equals(clientId);
+        return clientId != null && !clientId.isBlank()
+                && !"CHANGE_ME".equals(clientId) && !clientId.startsWith("your-");
     }
 
     private List<DiscoverySeed> fetchItems(String url) {
@@ -116,6 +119,8 @@ public class YahooItemSearchService implements ExternalItemSearchService {
         String name = hit.path("name").asText();
         BigDecimal price = new BigDecimal(hit.path("price").asInt());
         String condition = hit.path("condition").asText("new");
+        String sellerId = hit.path("seller").path("sellerId").asText();
+        String itemCode = hit.path("code").asText();
 
         String normalizedCondition = "new".equalsIgnoreCase(condition) ? "NEW" : "USED";
 
@@ -128,6 +133,6 @@ public class YahooItemSearchService implements ExternalItemSearchService {
                 price,
                 null,
                 null,
-                "Imported from Yahoo Shopping");
+                "Imported from Yahoo. Seller: " + sellerId + " Code: " + itemCode);
     }
 }
