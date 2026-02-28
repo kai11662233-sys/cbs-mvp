@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBS-MVP Dashboard</title>
+    <title>CBS-MVP ダッシュボード</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -531,6 +531,8 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 40px 20px;
+            /* 上下に強制的に40pxの余白を確保 */
         }
 
         .modal.active {
@@ -543,7 +545,47 @@
             border-radius: 1rem;
             width: 90%;
             max-width: 500px;
+            max-height: calc(100vh - 120px);
+            /* 100vhから余裕を持ってマイナス */
+            overflow-y: auto;
+            position: relative;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .modal-close-x {
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.2s;
+            z-index: 1010;
+        }
+
+        .modal-close-x:hover {
+            color: var(--text-primary);
+        }
+
+        /* スクロールバーのカスタマイズ */
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--bg-card);
+            border-radius: 4px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
         }
     </style>
 </head>
@@ -567,9 +609,9 @@
             <div class="nav-logo">CBS-MVP</div>
             <div class="nav-links">
                 <span class="nav-link active" data-page="dashboard">📊 ダッシュボード</span>
-                <span class="nav-link" data-page="discovery">🔍 Discovery</span>
-                <span class="nav-link" data-page="candidates">📦 Candidate</span>
-                <span class="nav-link" data-page="orders">🛒 Orders</span>
+                <span class="nav-link" data-page="discovery">🔍 リサーチ</span>
+                <span class="nav-link" data-page="candidates">📦 候補</span>
+                <span class="nav-link" data-page="orders">🛒 注文</span>
                 <span class="nav-link" data-page="pricing">💰 価格計算</span>
                 <span class="nav-link" data-page="fx">💱 為替</span>
             </div>
@@ -620,7 +662,7 @@
                             <div class="stat-icon green">📈</div>
                         </div>
                         <div class="card-value" id="statsAvgMargin">--</div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary);">DRAFT_READY</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">下書き待ち</div>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -635,7 +677,7 @@
                             <div class="stat-icon yellow">💰</div>
                         </div>
                         <div class="card-value" id="statsTotalProfit">--</div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary);">DRAFT_READY</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">下書き待ち</div>
                     </div>
                     <div class="card">
                         <div class="card-header">
@@ -665,7 +707,7 @@
 
             <!-- Candidateページ -->
             <div id="page-candidates" class="page">
-                <h2 class="section-title">📦 Candidate管理</h2>
+                <h2 class="section-title">📦 候補管理</h2>
 
                 <div class="card" style="margin-bottom: 1.5rem;">
                     <h3 style="margin-bottom: 1rem;">CSVインポート</h3>
@@ -686,7 +728,7 @@
                         <label
                             style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-left: 1rem;">
                             <input type="checkbox" id="autoFilterProfit" style="width: auto; margin: 0;">
-                            利益判定フィルタ (NGはREJECTED)
+                            利益判定フィルタ (不合格は却下)
                         </label>
                         <div style="margin-left: auto; display: flex; gap: 0.5rem;">
                             <button class="btn btn-outline btn-sm" onclick="previewCsv()">プレビュー</button>
@@ -700,21 +742,20 @@
                 <div class="card">
                     <div style="margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h3>Candidate一覧</h3>
+                            <h3>候補一覧</h3>
                             <button class="btn btn-outline btn-sm" onclick="loadCandidates()">🔄 更新</button>
                         </div>
 
                         <!-- Bulk Actions Bar -->
                         <div id="bulkActionBar"
                             style="display: none; background: var(--bg-card); padding: 0.75rem; border-radius: 0.5rem; align-items: center; gap: 1rem;">
-                            <span style="font-weight: 500;"><span id="selectedCount">0</span> selected</span>
+                            <span style="font-weight: 500;"><span id="selectedCount">0</span> 件選択中</span>
                             <div style="height: 20px; width: 1px; background: var(--text-secondary);"></div>
                             <label style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                 <input type="checkbox" id="bulkAutoDraft" style="width: auto; margin: 0;">
-                                Create Drafts if OK
+                                OKなら自動で下書き作成
                             </label>
-                            <button class="btn btn-primary btn-sm" onclick="executeBulkPricing()">Auto-Price
-                                Selected</button>
+                            <button class="btn btn-primary btn-sm" onclick="executeBulkPricing()">選択した項目を一括計算</button>
                         </div>
                     </div>
 
@@ -742,19 +783,19 @@
 
             <!-- Ordersページ -->
             <div id="page-orders" class="page">
-                <h2 class="section-title">🛒 Order管理</h2>
+                <h2 class="section-title">🛒 注文管理</h2>
 
                 <div class="card">
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h3>Order一覧</h3>
+                        <h3>注文一覧</h3>
                         <button class="btn btn-outline btn-sm" onclick="loadOrders()">🔄 更新</button>
                     </div>
                     <table>
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>eBay Order</th>
+                                <th>eBay注文キー</th>
                                 <th>売上(USD)</th>
                                 <th>状態</th>
                                 <th>作成日</th>
@@ -792,7 +833,7 @@
                         </select>
 
                         <label>販売価格 (USD) <span style="font-size:0.8em; color:var(--text-secondary)">(任意)</span></label>
-                        <input type="number" id="calcTargetSell" placeholder="空欄なら利益率20%で計算" step="0.01">
+                        <input type="number" id="calcTargetSell" placeholder="空欄なら利益率25%で計算" step="0.01">
 
                         <button class="btn btn-primary" onclick="calculatePrice()">計算する</button>
                     </div>
@@ -833,7 +874,7 @@
 
             <!-- Discoveryページ -->
             <div id="page-discovery" class="page">
-                <h2 class="section-title">🔍 Discovery - おすすめ商品</h2>
+                <h2 class="section-title">🔍 リサーチ - おすすめ商品</h2>
 
                 <div class="card" style="margin-bottom: 1.5rem;">
                     <div
@@ -852,7 +893,7 @@
                         </div>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="file" id="discoveryCsvFile" accept=".csv" style="max-width: 200px;">
-                            <button class="btn btn-sm" onclick="uploadDiscoveryCsv()">📤 CSV Upload</button>
+                            <button class="btn btn-sm" onclick="uploadDiscoveryCsv()">📤 CSVアップロード</button>
                             <button class="btn btn-sm btn-primary" id="btnAutoRecommend" onclick="autoRecommend()">🤖
                                 おすすめ自動取得</button>
                             <button class="btn btn-outline btn-sm" onclick="loadDiscoveryRecommendations()">🔄
@@ -870,10 +911,10 @@
                                 <th>ID</th>
                                 <th>タイトル</th>
                                 <th>価格</th>
-                                <th>Safety</th>
-                                <th>Profit</th>
-                                <th>Fresh</th>
-                                <th>Overall</th>
+                                <th>安全性</th>
+                                <th>利益</th>
+                                <th>鮮度</th>
+                                <th>総合</th>
                                 <th>状態</th>
                                 <th>操作</th>
                             </tr>
@@ -891,21 +932,21 @@
         <!-- Pricing Modal -->
         <div id="pricingModal" class="modal">
             <div class="modal-content">
-                <h3 style="margin-bottom: 1.5rem;">Candidate Pricing</h3>
+                <button class="modal-close-x" onclick="closePricingModal()">&times;</button>
+                <h3 style="margin-bottom: 1.5rem;">候補の価格設定</h3>
                 <input type="hidden" id="p_candidateId">
                 <input type="hidden" id="p_sourcePrice">
                 <input type="hidden" id="p_weight">
                 <input type="hidden" id="p_size">
 
-                <label>FX Rate (JPY/USD)</label>
+                <label>為替レート (円/ドル)</label>
                 <input type="number" id="p_fxRate" step="0.01">
 
-                <label>Target Sell Price (USD)</label>
+                <label>希望販売価格 (USD)</label>
                 <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
                     <div style="display: flex; gap: 0.5rem;">
-                        <input type="number" id="p_targetSell" step="0.01" placeholder="Auto Calc"
-                            oninput="syncSlider()">
-                        <button class="btn btn-outline" onclick="calcTargetSell()">Run Calc</button>
+                        <input type="number" id="p_targetSell" step="0.01" placeholder="自動計算" oninput="syncSlider()">
+                        <button class="btn btn-outline" onclick="calcTargetSell()">計算実行</button>
                     </div>
                     <input type="range" id="p_targetSellRange" min="1" max="500" step="1" oninput="syncInput()">
                 </div>
@@ -913,18 +954,18 @@
                 <div style="margin-bottom: 1.5rem;">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                         <input type="checkbox" id="p_autoDraft" style="width: auto; margin: 0;">
-                        <span>Auto Draft (Profit & Cash Gate OK)</span>
+                        <span>自動下書き (利益・資金判定OK時)</span>
                     </label>
                     <p style="font-size: 0.75rem; color: var(--text-secondary); margin-left: 1.5rem;">
-                        If gates pass, automatically create eBay draft.
+                        判定を通過した場合、自動でeBay下書きを作成します。
                     </p>
                 </div>
 
                 <div id="modalMsg" style="margin-bottom: 1rem;"></div>
 
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button class="btn btn-outline" onclick="closePricingModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="submitPricingAction()">Execute Pricing</button>
+                    <button class="btn btn-outline" onclick="closePricingModal()">キャンセル</button>
+                    <button class="btn btn-primary" onclick="submitPricingAction()">価格設定を実行</button>
                 </div>
             </div>
         </div>
@@ -932,7 +973,8 @@
         <!-- Discovery Detail Modal -->
         <div id="discoveryModal" class="modal">
             <div class="modal-content" style="max-width: 700px;">
-                <h3 style="margin-bottom: 1.5rem;">Discovery Item 詳細</h3>
+                <button class="modal-close-x" onclick="closeDiscoveryModal()">&times;</button>
+                <h3 style="margin-bottom: 1.5rem;">リサーチ結果の詳細</h3>
                 <input type="hidden" id="d_itemId">
 
                 <div class="grid grid-2" style="margin-bottom: 1rem;">
@@ -948,25 +990,25 @@
 
                 <div class="grid grid-4" style="margin-bottom: 1rem;">
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Safety</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">安全性</div>
                         <div id="d_safety" style="font-size: 1.5rem; font-weight: 700;">--</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Profit</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">利益</div>
                         <div id="d_profit" style="font-size: 1.5rem; font-weight: 700;">--</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Freshness</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">鮮度</div>
                         <div id="d_freshness" style="font-size: 1.5rem; font-weight: 700;">--</div>
                     </div>
                     <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-secondary);">Overall</div>
+                        <div style="font-size: 0.75rem; color: var(--text-secondary);">総合</div>
                         <div id="d_overall" style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">--</div>
                     </div>
                 </div>
 
                 <div style="margin-bottom: 1rem;">
-                    <label>Safety内訳</label>
+                    <label>安全性内訳</label>
                     <div id="d_breakdown"
                         style="font-size: 0.875rem; background: var(--bg-card); padding: 0.5rem; border-radius: 0.5rem;">
                         --</div>
@@ -978,8 +1020,10 @@
                 </div>
 
                 <!-- Pricing概算 & Gate結果 -->
-                <div id="d_pricingSection" style="margin-bottom: 1rem; background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
-                    <label style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">💰 Pricing概算 & Gate判定</label>
+                <div id="d_pricingSection"
+                    style="margin-bottom: 1rem; background: var(--bg-card); padding: 1rem; border-radius: 0.75rem; border: 1px solid var(--border);">
+                    <label style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; display: block;">💰
+                        価格概算 & 利益・資金判定</label>
                     <div id="d_pricingContent">--</div>
                 </div>
 
@@ -997,9 +1041,9 @@
 
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button class="btn btn-outline" onclick="closeDiscoveryModal()">閉じる</button>
-                    <button class="btn btn-primary" onclick="refreshDiscoveryItem()">🔄 Refresh</button>
+                    <button class="btn btn-primary" onclick="refreshDiscoveryItem()">🔄 再評価</button>
                     <button class="btn btn-success" id="d_draftBtn" onclick="draftDiscoveryItem()" disabled>✅
-                        Draft作成を承認</button>
+                        下書き作成を承認</button>
                 </div>
             </div>
         </div>
@@ -1022,7 +1066,7 @@
             errorDiv.style.zIndex = '9999';
             errorDiv.style.fontSize = '12px';
             errorDiv.style.fontFamily = 'monospace';
-            errorDiv.innerHTML = '<strong>JS Error:</strong> ' + msg + ' (Line: ' + lineNo + ')<br><small>' + url + '</small>';
+            errorDiv.innerHTML = '<strong>JSエラー:</strong> ' + msg + ' (Line: ' + lineNo + ')<br><small>' + url + '</small>';
             document.body.appendChild(errorDiv);
             return false;
         };
@@ -1039,7 +1083,7 @@
             errorDiv.style.padding = '10px';
             errorDiv.style.zIndex = '9999';
             errorDiv.style.fontSize = '12px';
-            errorDiv.innerHTML = '<strong>Async Error:</strong> ' + (event.reason ? event.reason.message || event.reason : 'Unknown Promise Rejection');
+            errorDiv.innerHTML = '<strong>非同期エラー:</strong> ' + (event.reason ? event.reason.message || event.reason : '原因不明のPromise拒否');
             document.body.appendChild(errorDiv);
         };
 
@@ -1218,14 +1262,14 @@
                                 <td>
                                     <span class="badge ${getStateBadge(c.state)}" 
                                           title="${c.rejectReasonDetail || ''}">
-                                          ${c.state === 'REJECTED' && c.rejectReasonCode ? c.state + ' (' + c.rejectReasonCode + ')' : c.state}
+                                          ${c.state === 'REJECTED' ? '却下' : (c.state === 'CANDIDATE' ? '候補' : (c.state === 'DRAFT_READY' ? '下書き待ち' : c.state))} ${c.rejectReasonCode ? '(' + c.rejectReasonCode + ')' : ''}
                                     </span>
                                 </td>
                                 <td>
                                     <div style="display: flex; gap: 0.25rem;">
                                         <button class="btn btn-outline btn-sm" title="ブラウザで開く" onclick="window.open('${c.sourceUrl}', '_blank')">🌐</button>
                                         ${c.state === 'CANDIDATE' ?
-                                `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier || ''}')">Price</button>` :
+                                `<button class="btn btn-sm btn-primary" onclick="openPricingModal(${c.candidateId}, ${c.sourcePriceYen}, ${c.weightKg}, '${c.sizeTier || ''}')">価格設定</button>` :
                                 ''}
                                     </div>
                                 </td>
@@ -1238,7 +1282,7 @@
             }
         }
 
-        // Bulk Actions
+        // 一括操作
         function toggleSelectAll() {
             const all = document.getElementById('selectAll').checked;
             document.querySelectorAll('.bulk-check').forEach(cb => cb.checked = all);
@@ -1259,20 +1303,20 @@
             const ids = Array.from(checked).map(cb => parseInt(cb.value));
             const autoDraft = document.getElementById('bulkAutoDraft').checked;
 
-            // Need FX Rate
+            // 為替レートが必要
             let fxRate = null;
             try {
                 const fx = await api('/fx/rate');
-                if (!fx || !fx.rate) throw new Error("FX Rate unavailable");
+                if (!fx || !fx.rate) throw new Error("為替レートが利用できません");
                 fxRate = fx.rate;
             } catch (e) {
-                alert("Cannot proceed: " + e.message);
+                alert("続行できません: " + e.message);
                 return;
             }
 
-            if (!confirm(`${ids.length} items selected.\nExecute Auto-Price (FX: ${fxRate})?${autoDraft ? '\nAnd create drafts if profitable.' : ''}`)) return;
+            if (!confirm(`${ids.length} 件が選択されています。\n一括計算を実行しますか？ (為替: ${fxRate})${autoDraft ? '\n※利益・資金判定OKなら自動で下書き作成' : ''}`)) return;
 
-            // Show loading
+            // ローディング表示
             document.querySelectorAll('.bulk-check:checked').forEach(cb => {
                 const row = cb.closest('tr');
                 row.style.opacity = '0.5';
@@ -1291,17 +1335,17 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    alert(`Completed!\nSuccess: ${data.successCount}\nFailures: ${data.failureCount}\n${data.errors.length > 0 ? 'Errors:\n' + data.errors.join('\n') : ''}`);
+                    alert(`完了しました！\n成功: ${data.successCount} 件\n失敗: ${data.failureCount} 件\n${data.errors.length > 0 ? 'エラー内容:\n' + data.errors.join('\n') : ''}`);
                     loadCandidates();
                 } else {
-                    alert('Error: ' + (data.error || 'Unknown error'));
+                    alert('エラー: ' + (data.error || '不明なエラー'));
                 }
             } catch (e) {
-                alert('Network Error');
+                alert('ネットワークエラーが発生しました');
             }
         }
 
-        // Order読み込み
+        // 注文読み込み
         async function loadOrders() {
             const tbody = document.getElementById('ordersTable');
             tbody.innerHTML = '<tr><td colspan="5" class="loading"><span class="spinner"></span> 読み込み中...</td></tr>';
@@ -1534,7 +1578,7 @@
             return 'info';
         }
 
-        // Modal Functions
+        // モーダル関数
         async function openPricingModal(id, sourcePrice, weight, size) {
             document.getElementById('pricingModal').style.display = 'flex';
             document.getElementById('p_candidateId').value = id;
@@ -1552,14 +1596,16 @@
                     document.getElementById('p_fxRate').value = fx.rate;
                 }
             } catch (e) {
-                console.error('FX fetch error', e);
+                console.error('為替レート取得エラー', e);
             }
 
             document.getElementById('pricingModal').classList.add('active');
+            document.body.style.overflow = 'hidden'; // 背景スクロールロック
         }
 
         function closePricingModal() {
             document.getElementById('pricingModal').classList.remove('active');
+            document.body.style.overflow = ''; // 背景スクロールロック解除
         }
 
         async function calcTargetSell() {
@@ -1570,9 +1616,9 @@
             const fxRate = document.getElementById('p_fxRate').value;
             const targetSell = document.getElementById('p_targetSell').value;
 
-            if (!fxRate) { alert('FX Rate required'); return; }
+            if (!fxRate) { alert('為替レートが必要です'); return; }
 
-            // Clear previous message
+            // 以前のメッセージをクリア
             document.getElementById('modalMsg').innerHTML = '';
 
             try {
@@ -1593,35 +1639,35 @@
                 });
                 const data = await res.json();
 
-                // Update Target Sell if auto-calc was requested (empty input)
+                // 自動計算が要求された場合（入力が空の場合）、目標売価を更新
                 if (!targetSell && data.useSellUsd) {
                     document.getElementById('p_targetSell').value = data.useSellUsd;
                 }
 
-                // Show Comparison / Profit Info
+                // 比較/利益情報を表示
                 const profitRatePct = (data.profitRate * 100).toFixed(1);
-                let msg = `<div>Profit: ¥${formatYen(data.profitYen)} (${profitRatePct}%)</div>`;
+                let msg = `<div>利益: ¥${formatYen(data.profitYen)} (${profitRatePct}%)</div>`;
 
-                // History Comparison
+                // 履歴比較
                 if (data.prevProfitYen !== undefined && data.prevProfitYen !== null) {
                     const diff = data.diffProfitYen;
                     const sign = diff >= 0 ? '+' : '';
                     const color = diff >= 0 ? 'success' : 'danger';
                     msg += `<div style="font-size: 0.9em; margin-top: 4px;">
-                                Prev: ¥${formatYen(data.prevProfitYen)} 
+                                前回: ¥${formatYen(data.prevProfitYen)} 
                                 <span class="${color}">(${sign}¥${formatYen(diff)})</span>
                             </div>`;
                 }
 
                 if (!data.gateProfitOk) {
-                    msg += `<div class="danger" style="margin-top:4px;">⚠️ Profit Gate NG</div>`;
+                    msg += `<div class="danger" style="margin-top:4px;">⚠️ 利益判定 NG</div>`;
                 }
 
                 document.getElementById('modalMsg').innerHTML = msg;
 
             } catch (e) {
                 console.error(e);
-                document.getElementById('modalMsg').innerHTML = `<div class="danger">Calc Error</div>`;
+                document.getElementById('modalMsg').innerHTML = `<div class="danger">計算エラー</div>`;
             }
         }
 
@@ -1632,11 +1678,11 @@
             const autoDraft = document.getElementById('p_autoDraft').checked;
 
             if (!fxRate) {
-                alert('FX Rate represents required');
+                alert('為替レートを入力してください');
                 return;
             }
 
-            document.getElementById('modalMsg').innerHTML = '<span class="spinner"></span> Processing...';
+            document.getElementById('modalMsg').innerHTML = '<span class="spinner"></span> 実行中...';
 
             try {
                 const res = await fetch(`/candidates/${id}/pricing`, {
@@ -1660,14 +1706,14 @@
                     loadCandidates();
                     // Show result? Maybe just refresh list is enough and show badge update.
                 } else {
-                    document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">${data.error || 'Error'}</div>`;
+                    document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">${data.error || 'エラー'}</div>`;
                 }
             } catch (e) {
-                document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">Network Error</div>`;
+                document.getElementById('modalMsg').innerHTML = `<div class="alert alert-danger">ネットワークエラー</div>`;
             }
         }
 
-        // Debounce setup
+        // デバウンス設定
         let debounceTimer;
         function debouncedCalc() {
             clearTimeout(debounceTimer);
@@ -1678,17 +1724,17 @@
             const val = document.getElementById('p_targetSell').value;
             if (val) {
                 document.getElementById('p_targetSellRange').value = val;
-                debouncedCalc(); // Auto-calc on manual input too
+                debouncedCalc(); // 手動入力時も自動計算
             }
         }
 
         function syncInput() {
             const val = document.getElementById('p_targetSellRange').value;
             document.getElementById('p_targetSell').value = val;
-            debouncedCalc(); // Auto-calc on slider move
+            debouncedCalc(); // スライダー移動時も自動計算
         }
 
-        // ===== Discovery Functions =====
+        // ===== 発見機能 =====
         async function autoRecommend() {
             const btn = document.getElementById('btnAutoRecommend');
             const originalText = btn.textContent;
@@ -1718,7 +1764,7 @@
 
             try {
                 const res = await fetch(url, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!res.ok) throw new Error('Failed to load');
+                if (!res.ok) throw new Error('読み込みに失敗しました');
                 const data = await res.json();
                 renderDiscoveryTable(data.items || []);
             } catch (e) {
@@ -1743,7 +1789,7 @@
                     <td><span class="badge ${getScoreBadgeClass(item.profitScore)}">${item.profitScore}</span></td>
                     <td><span class="badge ${getScoreBadgeClass(item.freshnessScore)}">${item.freshnessScore}</span></td>
                     <td><strong>${item.overallScore}</strong></td>
-                    <td><span class="badge ${getStatusBadgeClass(item.status)}">${item.status}</span></td>
+                    <td><span class="badge ${getStatusBadgeClass(item.status)}">${getStatusLabel(item.status)}</span></td>
                     <td>
                         <button class="btn btn-outline btn-sm" onclick="showDiscoveryDetail(${item.id})">詳細</button>
                     </td>
@@ -1760,12 +1806,43 @@
         function getStatusBadgeClass(status) {
             switch (status) {
                 case 'NEW': return 'info';
-                case 'CHECKED': return 'success';
-                case 'OK': return 'success';
-                case 'NG': return 'danger';
+                case 'CHECKED':
+                case 'OK':
                 case 'DRAFTED': return 'success';
-                default: return '';
+                case 'NG': return 'danger';
+                default: return 'info';
             }
+        }
+
+        function getStatusLabel(status) {
+            switch (status) {
+                case 'NEW': return '新規';
+                case 'CHECKED': return '確認済み';
+                case 'OK': return 'OK';
+                case 'NG': return 'NG';
+                case 'DRAFTED': return '下書き済み';
+                default: return status || '';
+            }
+        }
+
+        function getReasonLabel(reason) {
+            const map = {
+                'USED_CONDITION': 'コンディション',
+                'UNKNOWN_CONDITION': 'コンディション',
+                'C2C_SOURCE': '仕入元種別',
+                'TRUSTED_SOURCE': '信頼できるソース',
+                'RESTRICTED_CATEGORY': 'カテゴリ制限',
+                'HIGH_PRICE_VOLATILITY': '価格変動',
+                'PRICE_VOLATILITY': '価格変動',
+                'HEAVY_ITEM': '重量',
+                'MEDIUM_WEIGHT': '重量',
+                'TITLE_TOO_SHORT': 'タイトル品質',
+                'TITLE_TOO_LONG': 'タイトル品質',
+                'TITLE_MISSING': 'タイトル品質',
+                'VERO_BRAND_RISK': 'VeROリスク',
+                'PRICE_OUT_OF_SWEET_SPOT': '価格帯'
+            };
+            return map[reason] || reason;
         }
 
         async function showDiscoveryDetail(id) {
@@ -1776,7 +1853,7 @@
 
                 document.getElementById('d_itemId').value = item.id;
                 document.getElementById('d_title').textContent = item.title || '(未設定)';
-                document.getElementById('d_status').innerHTML = `<span class="badge ${getStatusBadgeClass(item.status)}">${item.status}</span>`;
+                document.getElementById('d_status').innerHTML = `<span class="badge ${getStatusBadgeClass(item.status)}">${getStatusLabel(item.status)}</span>`;
                 document.getElementById('d_safety').textContent = item.safetyScore;
                 document.getElementById('d_profit').textContent = item.profitScore;
                 document.getElementById('d_freshness').textContent = item.freshnessScore;
@@ -1786,7 +1863,7 @@
                 const breakdown = item.safetyBreakdown || [];
                 if (breakdown.length) {
                     document.getElementById('d_breakdown').innerHTML = breakdown.map(b =>
-                        `<div>${b.reason}: <span style="color: ${b.delta > 0 ? 'var(--success)' : 'var(--danger)'}">${b.delta > 0 ? '+' : ''}${b.delta}</span> (${b.description})</div>`
+                        `<div>${getReasonLabel(b.reason)}: <span style="color: ${b.delta > 0 ? 'var(--success)' : 'var(--danger)'}">${b.delta > 0 ? '+' : ''}${b.delta}</span> (${b.description})</div>`
                     ).join('');
                 } else {
                     document.getElementById('d_breakdown').textContent = '減点なし';
@@ -1805,11 +1882,11 @@
                 if (pe && !pe.error) {
                     const profitPct = pe.profitRate ? (pe.profitRate * 100).toFixed(1) : '0.0';
                     const profitOkBadge = pe.gateProfitOk
-                        ? '<span class="badge success">✅ Profit OK</span>'
-                        : '<span class="badge danger">❌ Profit NG</span>';
+                        ? '<span class="badge success">✅ 利益 OK</span>'
+                        : '<span class="badge danger">❌ 利益 NG</span>';
                     const cashOkBadge = pe.gateCashOk
-                        ? '<span class="badge success">✅ Cash OK</span>'
-                        : '<span class="badge danger">❌ Cash NG</span>';
+                        ? '<span class="badge success">✅ 資金 OK</span>'
+                        : '<span class="badge danger">❌ 資金 NG</span>';
 
                     document.getElementById('d_pricingContent').innerHTML = `
                         <div style="display: flex; gap: 0.75rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
@@ -1827,28 +1904,29 @@
                         </table>
                     `;
                 } else {
-                    document.getElementById('d_pricingContent').innerHTML = `<div style="color: var(--text-secondary);">Pricing情報なし${pe && pe.error ? ': ' + pe.error : ''}</div>`;
+                    document.getElementById('d_pricingContent').innerHTML = `<div style="color: var(--text-secondary);">価格情報なし${pe && pe.error ? ': ' + pe.error : ''}</div>`;
                 }
 
                 document.getElementById('d_url').textContent = item.sourceUrl;
                 document.getElementById('d_url').href = item.sourceUrl;
 
-                // Draft button
+                // 下書きボタン
                 const draftBtn = document.getElementById('d_draftBtn');
                 const allGatesOk = pe && pe.gateProfitOk && pe.gateCashOk;
                 draftBtn.disabled = !item.isDraftable || item.status === 'DRAFTED' || !allGatesOk;
                 if (item.status === 'DRAFTED') {
-                    draftBtn.textContent = '✓ Draft済み';
+                    draftBtn.textContent = '✓ 下書き済み';
                     document.getElementById('discoveryModalMsg').innerHTML = '';
                 } else if (!allGatesOk && item.isDraftable) {
-                    draftBtn.textContent = '✅ Draft作成を承認';
-                    document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-warning">⚠️ Gate未通過のためDraft作成不可</div>';
+                    draftBtn.textContent = '✅ 下書き作成を承認';
+                    document.getElementById('discoveryModalMsg').innerHTML = '<div class="alert alert-warning">⚠️ 判定未通過のため下書き作成不可</div>';
                 } else {
-                    draftBtn.textContent = '✅ Draft作成を承認';
+                    draftBtn.textContent = '✅ 下書き作成を承認';
                     document.getElementById('discoveryModalMsg').innerHTML = '';
                 }
 
                 document.getElementById('discoveryModal').classList.add('active');
+                document.body.style.overflow = 'hidden'; // 背景スクロールロック
             } catch (e) {
                 alert('詳細の読み込みに失敗しました');
                 console.error(e);
@@ -1896,6 +1974,7 @@
 
         function closeDiscoveryModal() {
             document.getElementById('discoveryModal').classList.remove('active');
+            document.body.style.overflow = ''; // 背景スクロールロック解除
         }
 
         async function refreshDiscoveryItem() {
@@ -1936,9 +2015,9 @@
 
                 const data = await res.json();
                 if (res.ok) {
-                    document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-success">Draft作成完了！ Draft ID: ${data.draftId}</div>`;
+                    document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-success">下書き作成完了！ 下書きID: ${data.draftId}</div>`;
                     document.getElementById('d_draftBtn').disabled = true;
-                    document.getElementById('d_draftBtn').textContent = '✓ Draft済み';
+                    document.getElementById('d_draftBtn').textContent = '✓ 下書き済み';
                     loadDiscoveryRecommendations();
                 } else {
                     document.getElementById('discoveryModalMsg').innerHTML = `<div class="alert alert-danger">${data.message || data.error}</div>`;
