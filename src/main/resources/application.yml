@@ -1,3 +1,5 @@
+spring.config.import: optional:file:./application-secrets.yml
+
 server:
   port: 8080
 
